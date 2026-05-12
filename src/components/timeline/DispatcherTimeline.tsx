@@ -1,5 +1,5 @@
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { mockDrivers } from "../../data/mockDrivers";
 import { mockFlights } from "../../data/mockFlights";
 import type { FlightAssignment } from "../../types/dispatch";
@@ -11,8 +11,12 @@ import { TimelineHeader } from "./TimelineHeader";
 import { TimelineLegend } from "./TimelineLegend";
 import { timelineWidth } from "./timelineUtils";
 
-export function DispatcherTimeline() {
-  const [flights, setFlights] = useState<FlightAssignment[]>(mockFlights);
+export function DispatcherTimeline({ flights: sourceFlights = mockFlights }: { flights?: FlightAssignment[] }) {
+  const [flights, setFlights] = useState<FlightAssignment[]>(sourceFlights);
+
+  useEffect(() => {
+    setFlights(sourceFlights);
+  }, [sourceFlights]);
 
   function handleDragEnd(event: DragEndEvent) {
     const flightId = String(event.active.id);

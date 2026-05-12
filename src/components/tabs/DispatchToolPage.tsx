@@ -3,17 +3,23 @@ import { mockDrivers } from "../../data/mockDrivers";
 import { mockFlights } from "../../data/mockFlights";
 import { mockHelpers, mockTrucks } from "../../data/mockResources";
 import { createDispatchSchedule } from "../../engine/scheduler";
+import type { FlightAssignment, ResourceInputs } from "../../types/dispatch";
 import { Panel } from "../ui/Panel";
 import { ExceptionTable, PushTable, ScheduleSummaryCards } from "./scheduleUi";
 
-export function DispatchToolPage() {
-  const [availableDrivers, setAvailableDrivers] = useState(4);
-  const [availableHelpers, setAvailableHelpers] = useState(1);
-  const [availableTrucks, setAvailableTrucks] = useState(3);
+export function DispatchToolPage({ flights = mockFlights }: { flights?: FlightAssignment[] }) {
+  const [draftDrivers, setDraftDrivers] = useState(4);
+  const [draftHelpers, setDraftHelpers] = useState(1);
+  const [draftTrucks, setDraftTrucks] = useState(3);
+  const [resources, setResources] = useState<ResourceInputs>({
+    availableDrivers: 4,
+    availableHelpers: 1,
+    availableTrucks: 3,
+  });
 
   const result = useMemo(
-    () => createDispatchSchedule(mockFlights, mockDrivers, mockHelpers, mockTrucks, { availableDrivers, availableHelpers, availableTrucks }),
-    [availableDrivers, availableHelpers, availableTrucks],
+    () => createDispatchSchedule(flights, mockDrivers, mockHelpers, mockTrucks, resources),
+    [flights, resources],
   );
 
   return (
@@ -22,7 +28,19 @@ export function DispatchToolPage() {
         <h2 className="text-2xl font-semibold tracking-tight text-ink">Day-to-Day Dispatch Tool</h2>
         <p className="mt-1 text-sm text-slate-500">Live operations mode. Enter available resources to see the best achievable push plan.</p>
       </div>
-      <Panel className="p-5"><div className="grid grid-cols-3 gap-4"><ResourceInput label="Available Drivers" value={availableDrivers} onChange={setAvailableDrivers} /><ResourceInput label="Available Helpers" value={availableHelpers} onChange={setAvailableHelpers} /><ResourceInput label="Available Trucks" value={availableTrucks} onChange={setAvailableTrucks} /></div></Panel>
+      <Panel className="p-5">
+        <div className="grid grid-cols-[1fr_1fr_1fr_auto] items-end gap-4">
+          <ResourceInput label="Available Drivers" value={draftDrivers} onChange={setDraftDrivers} />
+          <ResourceInput label="Available Helpers" value={draftHelpers} onChange={setDraftHelpers} />
+          <ResourceInput label="Available Trucks" value={draftTrucks} onChange={setDraftTrucks} />
+          <button
+            onClick={() => setResources({ availableDrivers: draftDrivers, availableHelpers: draftHelpers, availableTrucks: draftTrucks })}
+            className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white shadow-sm"
+          >
+            Refresh Pairings
+          </button>
+        </div>
+      </Panel>
       <ScheduleSummaryCards result={result} />
       {result.resourceBottlenecks.length > 0 && <Panel className="p-5"><h3 className="text-base font-semibold text-ink">Resource Bottleneck Explanation</h3><div className="mt-3 flex flex-wrap gap-2">{result.resourceBottlenecks.map((bottleneck) => <span key={bottleneck} className="rounded-full bg-red-50 px-3 py-1 text-sm font-medium text-red-700">{bottleneck}</span>)}</div></Panel>}
       <PushTable result={result} />
