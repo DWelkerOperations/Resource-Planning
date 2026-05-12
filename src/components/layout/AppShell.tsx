@@ -18,11 +18,9 @@ export function AppShell({ activeTab, onTabChange, importedFileName, importedFli
         <Sidebar activeTab={activeTab} onTabChange={onTabChange} />
         <main className="flex min-w-0 flex-1 flex-col bg-slate-50/70">
           <TopBar
-            activeTab={activeTab}
             importedFileName={importedFileName}
             importedFlightCount={importedFlightCount}
             onScheduleImport={onScheduleImport}
-            onTabChange={onTabChange}
           />
           <div className="min-h-0 flex-1 overflow-auto p-5">{children}</div>
         </main>

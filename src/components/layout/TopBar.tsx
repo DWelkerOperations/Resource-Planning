@@ -1,18 +1,15 @@
 import { CalendarDays, ChevronDown, Users, Truck, Activity } from "lucide-react";
 import { ScheduleImporter } from "../import/ScheduleImporter";
 import { KpiCard } from "../ui/KpiCard";
-import { TabNav } from "./TabNav";
-import type { AppTab, FlightAssignment } from "../../types/dispatch";
+import type { FlightAssignment } from "../../types/dispatch";
 
 type TopBarProps = {
-  activeTab: AppTab;
   importedFileName?: string;
   importedFlightCount?: number;
   onScheduleImport: (flights: FlightAssignment[], fileName: string) => void;
-  onTabChange: (tab: AppTab) => void;
 };
 
-export function TopBar({ activeTab, importedFileName, importedFlightCount, onScheduleImport, onTabChange }: TopBarProps) {
+export function TopBar({ importedFileName, importedFlightCount, onScheduleImport }: TopBarProps) {
   return (
     <header className="no-print border-b border-slate-200 bg-white/90 px-6 py-4 backdrop-blur">
       <div className="mb-4 flex items-center justify-between gap-6">
@@ -31,27 +28,22 @@ export function TopBar({ activeTab, importedFileName, importedFlightCount, onSch
           <KpiCard label="Avg Utilization" value="71%" icon={<Activity size={19} />} />
         </div>
       </div>
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm">
-            <CalendarDays size={18} />
-            Jan 23, 2026
-            <ChevronDown size={16} />
-          </button>
-          <button className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm">
-            Scenario 1 · Default Rules
-            <ChevronDown size={16} />
-          </button>
-          <ScheduleImporter onImport={onScheduleImport} />
-          {importedFileName && (
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
-              {importedFlightCount} imported · {importedFileName}
-            </div>
-          )}
-        </div>
-        <div className="flex justify-end">
-          <TabNav activeTab={activeTab} onTabChange={onTabChange} />
-        </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <button className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm">
+          <CalendarDays size={18} />
+          Jan 23, 2026
+          <ChevronDown size={16} />
+        </button>
+        <button className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm">
+          Scenario 1 · Default Rules
+          <ChevronDown size={16} />
+        </button>
+        <ScheduleImporter onImport={onScheduleImport} />
+        {importedFileName && (
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
+            {importedFlightCount} imported · {importedFileName}
+          </div>
+        )}
       </div>
     </header>
   );
