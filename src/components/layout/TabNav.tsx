@@ -4,6 +4,8 @@ export const tabs: { id: AppTab; label: string }[] = [
   { id: "planning", label: "Planning Tool" },
   { id: "dispatch", label: "Dispatch Tool" },
   { id: "timeline", label: "Dispatcher Timeline" },
+  { id: "staffing", label: "Staffing" },
+  { id: "fleet", label: "Fleet" },
   { id: "exceptions", label: "Exceptions" },
   { id: "tour-sheet", label: "Tour Sheet" },
   { id: "dashboard", label: "Dashboard" },

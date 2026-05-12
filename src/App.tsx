@@ -3,7 +3,9 @@ import { AppShell } from "./components/layout/AppShell";
 import { DashboardPage } from "./components/tabs/DashboardPage";
 import { DispatchToolPage } from "./components/tabs/DispatchToolPage";
 import { ExceptionsPage } from "./components/tabs/ExceptionsPage";
+import { FleetPage } from "./components/tabs/FleetPage";
 import { PlanningToolPage } from "./components/tabs/PlanningToolPage";
+import { StaffingPage } from "./components/tabs/StaffingPage";
 import { ThumbRulesPage } from "./components/tabs/ThumbRulesPage";
 import { TourSheetPage } from "./components/tabs/TourSheetPage";
 import { DispatcherTimeline } from "./components/timeline/DispatcherTimeline";
@@ -32,6 +34,8 @@ export default function App() {
       {activeTab === "planning" && <PlanningToolPage flights={scheduleFlights} />}
       {activeTab === "dispatch" && <DispatchToolPage flights={scheduleFlights} />}
       {activeTab === "timeline" && <DispatcherTimeline flights={scheduleFlights} />}
+      {activeTab === "staffing" && <StaffingPage />}
+      {activeTab === "fleet" && <FleetPage />}
       {activeTab === "exceptions" && <ExceptionsPage />}
       {activeTab === "tour-sheet" && <TourSheetPage />}
       {activeTab === "dashboard" && <DashboardPage />}

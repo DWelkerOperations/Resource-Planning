@@ -2,6 +2,8 @@ export type AppTab =
   | "planning"
   | "dispatch"
   | "timeline"
+  | "staffing"
+  | "fleet"
   | "exceptions"
   | "tour-sheet"
   | "dashboard"
@@ -129,4 +131,55 @@ export type ScheduleResult = {
   exceptions: ScheduleException[];
   summary: ScheduleSummary;
   resourceBottlenecks: string[];
+};
+
+export type StaffRole = "Driver" | "Helper";
+
+export type StaffStatus =
+  | "Available"
+  | "Assigned"
+  | "On Push"
+  | "Lunch"
+  | "Off Shift"
+  | "Call Out"
+  | "Unavailable";
+
+export type Shift = {
+  start: string;
+  end: string;
+  lengthHours: number;
+};
+
+export type StaffMember = {
+  id: string;
+  name: string;
+  role: StaffRole;
+  shift: Shift;
+  status: StaffStatus;
+  assignedPush: string | null;
+  notes: string;
+};
+
+export type FleetVehicleType = "Box Truck" | "Refrigerated Truck" | "High-Lift Truck" | "Cargo Van" | "Spare Truck";
+
+export type FleetVehicleStatus =
+  | "Available"
+  | "Assigned"
+  | "Out on Push"
+  | "Returning"
+  | "Down / Unavailable"
+  | "Maintenance";
+
+export type FleetVehicle = {
+  id: string;
+  truckNumber: string;
+  type: FleetVehicleType;
+  size: "Small" | "Medium" | "Large";
+  make: string;
+  model: string;
+  capacity: string;
+  status: FleetVehicleStatus;
+  assignedDriver: string | null;
+  assignedPush: string | null;
+  notes: string;
 };
