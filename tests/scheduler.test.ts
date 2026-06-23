@@ -209,6 +209,8 @@ describe("scheduler", () => {
     assert.equal(rejected.summary.unscheduledFlights, 0);
     assert.equal(rejected.summary.flightsWithExceptions, 1);
     assert.ok(rejected.exceptions.some((item) => item.cause === "driver-shortage"));
+    assert.ok(rejected.exceptions.some((item) => item.issue === "Missing driver, truck and helper coverage for UA100"));
+    assert.ok(rejected.exceptions.every((item) => !item.issue.includes("M-P")));
   });
 });
 
