@@ -41,6 +41,22 @@ describe("schedule import normalization", () => {
     assert.equal(result.flights[0]?.aircraft, "B 737");
   });
 
+  it("recognizes TripMaster exports and reports available departure dates", () => {
+    const result = parseScheduleRows([
+      ["Departure", "Airln", "Board", "Serv", "Depart ", "Ramp", "Kitchen", "Freq", "AC", "From", "To"],
+      [" 06/01/2026", "UA", "3750 ", "3750 ", "00:26", "21:26", "18:26", "1 ", "37X", "ORD", "EWR"],
+      [" 06/02/2026", "UA", "2666 ", "2666 ", "05:00", "02:00", "23:00", "1 ", "21N", "ORD", "DEN"],
+    ]);
+
+    assert.equal(result.detectedFormat, "standard");
+    assert.deepEqual(result.availableDates, ["2026-06-01", "2026-06-02"]);
+    assert.equal(result.normalizedRows.length, 2);
+    assert.equal(result.normalizedRows[0]?.airline, "UA");
+    assert.equal(result.normalizedRows[0]?.flightNumber, "3750");
+    assert.equal(result.normalizedRows[0]?.departureTime, "00:26");
+    assert.equal(result.normalizedRows[0]?.aircraftType, "37X");
+  });
+
   it("skips bad rows without rejecting the whole schedule when valid rows remain", () => {
     const result = parseScheduleRows([
       ["Departure Date", "Airline", "Flight Number", "Field Departure Time", "Aircraft Type", "Origin", "Destination"],

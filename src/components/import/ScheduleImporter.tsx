@@ -1,6 +1,6 @@
 import { Upload } from "lucide-react";
 import type { ChangeEvent } from "react";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { FlightAssignment } from "../../types/dispatch";
 import type { NormalizedScheduleRow, ScheduleImportResult } from "../../import/scheduleImport";
 
@@ -17,6 +17,24 @@ export function ScheduleImporter({ onImport }: ScheduleImporterProps) {
   const [importError, setImportError] = useState<string | null>(null);
   const [importWarning, setImportWarning] = useState<string | null>(null);
   const [pendingSchedule, setPendingSchedule] = useState<PendingSchedule | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>("");
+
+  const selectedSchedule = useMemo(() => {
+    if (!pendingSchedule) return null;
+    const date = selectedDate || pendingSchedule.availableDates[0] || "";
+    const rows: NormalizedScheduleRow[] = [];
+    const flights: FlightAssignment[] = [];
+
+    pendingSchedule.normalizedRows.forEach((row, index) => {
+      if (!date || row.departureDate === date) {
+        rows.push(row);
+        const flight = pendingSchedule.flights[index];
+        if (flight) flights.push(flight);
+      }
+    });
+
+    return { date, rows, flights };
+  }, [pendingSchedule, selectedDate]);
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -26,9 +44,11 @@ export function ScheduleImporter({ onImport }: ScheduleImporterProps) {
       setImportError(null);
       setImportWarning(null);
       setPendingSchedule(null);
+      setSelectedDate("");
       const { parseScheduleFile } = await import("../../import/scheduleImport");
       const result = await parseScheduleFile(file);
       setPendingSchedule({ ...result, fileName: file.name });
+      setSelectedDate(result.availableDates[0] ?? "");
       setImportWarning(importSummary(result));
     } catch (error) {
       setImportError(error instanceof Error ? error.message : "Could not read schedule file.");
@@ -39,14 +59,16 @@ export function ScheduleImporter({ onImport }: ScheduleImporterProps) {
   }
 
   function confirmImport() {
-    if (!pendingSchedule) return;
-    onImport(pendingSchedule.flights, pendingSchedule.fileName);
-    setImportWarning(`${pendingSchedule.flights.length} normalized rows confirmed and loaded.`);
+    if (!pendingSchedule || !selectedSchedule) return;
+    onImport(selectedSchedule.flights, pendingSchedule.fileName);
+    setImportWarning(`${selectedSchedule.flights.length} normalized rows confirmed and loaded${selectedSchedule.date ? ` for ${formatDateForDisplay(selectedSchedule.date)}` : ""}.`);
     setPendingSchedule(null);
+    setSelectedDate("");
   }
 
   function cancelImport() {
     setPendingSchedule(null);
+    setSelectedDate("");
     setImportWarning(null);
     setImportError(null);
   }
@@ -66,20 +88,32 @@ export function ScheduleImporter({ onImport }: ScheduleImporterProps) {
         {importError && <span className="text-xs font-medium text-red-600">{importError}</span>}
         {!importError && importWarning && <span className="max-w-xl text-xs font-medium text-amber-700">{importWarning}</span>}
       </div>
-      {pendingSchedule && (
+      {pendingSchedule && selectedSchedule && (
         <div className="mt-3 max-w-5xl rounded-xl border border-amber-200 bg-amber-50 p-3 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-ink">Review normalized schedule before loading</p>
               <p className="mt-1 text-xs text-slate-600">
-                {pendingSchedule.fileName} · Format: {formatLabel(pendingSchedule.detectedFormat)} · {pendingSchedule.normalizedRows.length} valid · {pendingSchedule.skippedRowCount} skipped
+                {pendingSchedule.fileName} · Format: {formatLabel(pendingSchedule.detectedFormat)} · {selectedSchedule.rows.length} selected · {pendingSchedule.normalizedRows.length} valid total · {pendingSchedule.skippedRowCount} skipped
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {pendingSchedule.availableDates.length > 1 && (
+                <select
+                  value={selectedSchedule.date}
+                  onChange={(event) => setSelectedDate(event.target.value)}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                  aria-label="Departure date"
+                >
+                  {pendingSchedule.availableDates.map((date) => (
+                    <option key={date} value={date}>{formatDateForDisplay(date)}</option>
+                  ))}
+                </select>
+              )}
               <button type="button" onClick={cancelImport} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
                 Cancel
               </button>
-              <button type="button" onClick={confirmImport} className="rounded-lg bg-ink px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800">
+              <button type="button" onClick={confirmImport} disabled={selectedSchedule.flights.length === 0} className="rounded-lg bg-ink px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300">
                 Use This Schedule
               </button>
             </div>
@@ -90,7 +124,7 @@ export function ScheduleImporter({ onImport }: ScheduleImporterProps) {
               {pendingSchedule.warnings.length > 4 && <div>{pendingSchedule.warnings.length - 4} more warning(s).</div>}
             </div>
           )}
-          <NormalizedPreview rows={pendingSchedule.normalizedRows} />
+          <NormalizedPreview rows={selectedSchedule.rows} />
         </div>
       )}
     </div>
@@ -110,6 +144,12 @@ function formatLabel(format: ScheduleImportResult["detectedFormat"]) {
     "combined-flight": "combined flight schedule",
     "operation-plan": "operation plan schedule",
   }[format];
+}
+
+function formatDateForDisplay(date: string) {
+  const [year, month, day] = date.split("-");
+  if (!year || !month || !day) return date;
+  return `${month}/${day}/${year}`;
 }
 
 function NormalizedPreview({ rows }: { rows: NormalizedScheduleRow[] }) {

@@ -19,6 +19,7 @@ export type ScheduleImportResult = {
   detectedFormat: ScheduleFormatId;
   flights: FlightAssignment[];
   normalizedRows: NormalizedScheduleRow[];
+  availableDates: string[];
   skippedRowCount: number;
   warnings: string[];
 };
@@ -87,19 +88,23 @@ const formatDefinitions: FormatDefinition[] = [
 
 const headerAliases: Record<string, string> = {
   date: "departureDate",
+  departure: "departureDate",
   "departure date": "departureDate",
   departuredate: "departureDate",
   depdate: "departureDate",
   airline: "airline",
+  airln: "airline",
   carrier: "carrier",
   al: "airline",
   flight: "flight",
+  board: "flightNumber",
   "flight number": "flightNumber",
   flightnumber: "flightNumber",
   flt: "flightNumber",
   number: "number",
   "flt no": "flightNumber",
   "flt #": "flightNumber",
+  depart: "departureTime",
   etd: "etd",
   "field departure": "departureTime",
   "field departure time": "departureTime",
@@ -108,6 +113,7 @@ const headerAliases: Record<string, string> = {
   departuretime: "departureTime",
   time: "departureTime",
   aircraft: "aircraftType",
+  ac: "aircraftType",
   "aircraft type": "aircraftType",
   aircrafttype: "aircraftType",
   fleet: "fleet",
@@ -178,6 +184,7 @@ export function parseScheduleRows(rows: unknown[][]): ScheduleImportResult {
     detectedFormat: detected.definition.id,
     flights: validRows.map(toFlightAssignment),
     normalizedRows: validRows,
+    availableDates: [...new Set(validRows.map((row) => row.departureDate))].sort(),
     skippedRowCount,
     warnings,
   };
@@ -336,9 +343,26 @@ function isSupportedAircraft(value: string) {
   if (aircraftCodeSet.has(raw) || aircraftNameSet.has(normalized)) return true;
   return (
     /^(A)?3(19|20|21|2N|2S)$/.test(compact) ||
+    /^19[A-Z]?$/.test(compact) ||
+    /^20[A-Z]?$/.test(compact) ||
+    /^21[A-Z]?$/.test(compact) ||
+    /^33[A-Z0-9]?$/.test(compact) ||
+    /^3[27][A-Z0-9]?$/.test(compact) ||
+    /^38[A-Z0-9]?$/.test(compact) ||
+    /^73[A-Z0-9]{0,2}$/.test(compact) ||
+    /^74[A-Z0-9]?$/.test(compact) ||
     /^(B)?7(37|38|39|3G|3H|3J|3M|3R|3W|57|67|77|87)/.test(compact) ||
     /^7M[789]$/.test(compact) ||
+    /^7[36][A-Z0-9]{1,2}$/.test(compact) ||
+    /^77[A-Z0-9]{1,2}$/.test(compact) ||
+    /^78[A-Z0-9]{1,2}$/.test(compact) ||
+    /^[89]EP[89][RW]P$/.test(compact) ||
     /^E(170|175|190|195)$/.test(compact) ||
+    /^E7[A-Z0-9]?$/.test(compact) ||
+    /^ERJ$/.test(compact) ||
+    /^8CE$/.test(compact) ||
+    /^C5G$/.test(compact) ||
+    /^CR[5-9]$/.test(compact) ||
     /^CRJ\d{0,3}$/.test(compact)
   );
 }
