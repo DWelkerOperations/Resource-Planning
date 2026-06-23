@@ -1,4 +1,5 @@
 import type { RuleItem } from "../types/dispatch";
+import { sampleAirportOptions } from "./airports";
 import { planningRules } from "./planningRules";
 
 export function ruleItemsFromPlanningRules(rules = planningRules): RuleItem[] {
@@ -14,9 +15,8 @@ export function ruleItemsFromPlanningRules(rules = planningRules): RuleItem[] {
   const driveReturnOverrideText = driveReturnOverrides.length > 0
     ? driveReturnOverrides.map((override) => `${override.site} ${override.driveOutMinutes}/${override.returnMinutes} min`).join("; ")
     : "None";
-  const defaultSites = Object.entries(siteOverrides)
-    .filter(([, override]) => (override.driveOutMinutes ?? rules.mainlineDriveOutMinutes) === rules.mainlineDriveOutMinutes && (override.returnMinutes ?? rules.mainlineReturnMinutes) === rules.mainlineReturnMinutes)
-    .map(([site]) => site);
+  const overrideSites = new Set(driveReturnOverrides.map((override) => override.site));
+  const defaultSites = sampleAirportOptions.filter((site) => !overrideSites.has(site));
 
   return [
   { id: "r1", category: "Preferred on", setting: "Express / narrowbody / 757 / widebody", value: "40 / 50 / 65 / 90 min" },
