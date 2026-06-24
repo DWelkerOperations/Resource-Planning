@@ -382,6 +382,16 @@ function toFlights(assignments: FlightAssignment[], rules: PlanningRules, operat
       const preferredOnMinutes = preferredOnMinutesBeforeDeparture(flight.aircraft, aircraftCategory);
       const preferredOffMinutes = preferredOnMinutes - serviceMinutes;
       const hardOffMinutes = hardOffMinutesBeforeDeparture(flight.destinationAirport, rules);
+      const stripServiceStartMinutes = internationalStripServiceStartMinutes(flight);
+      const loadWindowStart = stripServiceStartMinutes !== undefined
+        ? minutesToTime(stripServiceStartMinutes)
+        : minutesToTime(etdMinutes - rules.earliestCateringBeforeDepartureMinutes);
+      const loadWindowEnd = stripServiceStartMinutes !== undefined
+        ? minutesToTime(stripServiceStartMinutes + serviceMinutes)
+        : minutesToTime(etdMinutes - preferredOffMinutes);
+      const hardLatestCompletion = stripServiceStartMinutes !== undefined
+        ? minutesToTime(stripServiceStartMinutes + serviceMinutes)
+        : minutesToTime(etdMinutes - hardOffMinutes);
       return {
         id: flight.id,
         flightNumber: flight.flightNumber,
@@ -395,9 +405,9 @@ function toFlights(assignments: FlightAssignment[], rules: PlanningRules, operat
         operationType: flightOperationType,
       originAirport: flight.originAirport,
         destinationAirport: flight.destinationAirport,
-        loadWindowStart: minutesToTime(etdMinutes - rules.earliestCateringBeforeDepartureMinutes),
-        loadWindowEnd: minutesToTime(etdMinutes - preferredOffMinutes),
-        hardLatestCompletion: minutesToTime(etdMinutes - hardOffMinutes),
+        loadWindowStart,
+        loadWindowEnd,
+        hardLatestCompletion,
         workloadUnits: workloadFor(flight.serviceType, aircraftCategory),
       };
     });
@@ -413,7 +423,9 @@ function createInternationalStripFlights(outboundFlights: Flight[], rules: Plann
   return outboundFlights
     .filter((flight) => isInternationalDestination(flight.destinationAirport))
     .map((flight): Flight => {
-      const stripStartMinutes = Math.max(0, timeToMinutes(flight.etd) - internationalStripOffsetMinutes);
+      const stripStartMinutes = validTime(flight.inboundEta)
+        ? timeToMinutes(flight.inboundEta) + internationalStripCustomsClearanceMinutes
+        : Math.max(0, timeToMinutes(flight.etd) - internationalStripOffsetMinutes);
       const stripDuration = serviceMinutesForAircraft(flight.aircraft, flight.aircraftCategory, rules);
       const stripEndMinutes = stripStartMinutes + stripDuration;
       return {
@@ -498,6 +510,7 @@ function compatibleWithPairing(current: Flight[], next: Flight, rules: PlanningR
   const candidate = [...current, next];
   const categories = new Set(candidate.map((flight) => flight.aircraftCategory));
   if (categories.has("unknown")) return false;
+  if (candidate.some(isInternationalStripFlight)) return candidate.length === 1;
   if (candidate.some(isWidebodyStripFlight)) return candidate.length === 1;
   if (categories.has("regional") && categories.size > 1) return false;
   if (categories.has("widebody")) return candidate.length === 1;
@@ -532,6 +545,7 @@ function baseFlightNumber(flightNumber: string) {
 }
 
 function maxFlightsForPairing(flights: Flight[], rules: PlanningRules, pairingStrategy?: PairingStrategy) {
+  if (flights.some(isInternationalStripFlight)) return 1;
   if (flights.some(isWidebodyStripFlight)) return 1;
   if (flights.some((flight) => flight.aircraftCategory === "unknown" || flight.aircraftCategory === "widebody")) return 1;
   const siteOverride = sharedSiteRules(flights, rules);
@@ -658,8 +672,14 @@ function evaluateRoute(flights: Flight[], rules: PlanningRules) {
     currentStart = serviceEnd;
   });
 
-  const rawKitchenDeparture = timeToMinutes(serviceEvents[0]?.serviceStart ?? "00:00") - outboundDriveAndSealMinutes;
-  const kitchenDeparture = Math.max(snapDown(rawKitchenDeparture, rules), earliestAllowedKitchenDeparture);
+  const firstFlight = sortedFlights[0];
+  const stripArrivalTarget = firstFlight && isInternationalStripFlight(firstFlight) && validTime(firstFlight.inboundEta)
+    ? timeToMinutes(firstFlight.inboundEta) - internationalStripArrivalWaitBeforeMinutes
+    : undefined;
+  const rawKitchenDeparture = stripArrivalTarget !== undefined
+    ? stripArrivalTarget - driveOutMinutes
+    : timeToMinutes(serviceEvents[0]?.serviceStart ?? "00:00") - outboundDriveAndSealMinutes;
+  const kitchenDeparture = Math.max(stripArrivalTarget !== undefined ? rawKitchenDeparture : snapDown(rawKitchenDeparture, rules), earliestAllowedKitchenDeparture);
   const loadStart = Math.max(0, kitchenDeparture - rules.firstAircraftSetupMinutes);
   const loadDurationMinutes = kitchenDeparture - loadStart;
   const arriveFirstGate = kitchenDeparture + driveOutMinutes;
@@ -697,6 +717,14 @@ function earliestServiceStart(flight: Flight, rules: PlanningRules) {
   const inboundReady = validTime(flight.inboundEta) ? timeToMinutes(flight.inboundEta) + 10 : windowStart;
   if (flight.aircraftCategory === "regional") return Math.max(inboundReady, timeToMinutes(flight.etd) - rules.earliestCateringBeforeDepartureMinutes);
   return Math.max(windowStart, inboundReady);
+}
+
+const internationalStripArrivalWaitBeforeMinutes = 15;
+const internationalStripCustomsClearanceMinutes = 15;
+
+function internationalStripServiceStartMinutes(flight: FlightAssignment) {
+  if (flight.serviceType !== "intl-strip" || !validTime(flight.inboundEta)) return undefined;
+  return timeToMinutes(flight.inboundEta) + internationalStripCustomsClearanceMinutes;
 }
 
 function earliestAllowedKitchenDepartureForPush(flights: Flight[], rules: PlanningRules) {
@@ -804,7 +832,8 @@ function assignResourcesToPush(push: Push, driverPool: ResourcePoolItem[], helpe
   const latestTruckReadyTime = trucks.length > 0 ? Math.max(...trucks.map((truck) => truck.availableAt)) : originalResourceStart;
   const latestHelperReadyTime = helpers.length > 0 ? Math.max(...helpers.map((helper) => helper.availableAt)) : originalResourceStart;
   const resourceReadyTime = Math.max(latestDriverReadyTime, latestTruckReadyTime, helperNeeded ? latestHelperReadyTime : originalResourceStart);
-  const actualResourceStart = snapUp(Math.max(originalResourceStart, resourceReadyTime), rules);
+  const rawResourceStart = Math.max(originalResourceStart, resourceReadyTime);
+  const actualResourceStart = push.flights.some(isInternationalStripFlight) ? rawResourceStart : snapUp(rawResourceStart, rules);
   const delay = actualResourceStart - originalResourceStart;
   if (delay > 0) shiftPush(assignedPush, delay);
 

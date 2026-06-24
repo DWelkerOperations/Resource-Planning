@@ -186,6 +186,37 @@ describe("scheduler", () => {
     assert.equal(minutesBetween(push.serviceEvents[1].serviceEnd, push.returnTime), 30);
   });
 
+  it("plans international strip service from aircraft arrival with customs wait", () => {
+    const result = createPlanningSchedule(
+      [
+        flight({
+          id: "strip1",
+          flightNumber: "UA9063",
+          aircraft: "37K",
+          etd: "23:14",
+          inboundEta: "22:07",
+          originAirport: "ORD",
+          destinationAirport: "ORD",
+          serviceType: "intl-strip",
+        }),
+      ],
+      baseDrivers,
+      baseHelpers,
+      baseTrucks,
+      { rules: planningRules, operationType: "mainline" },
+    );
+    const push = result.pushes[0];
+    const event = push?.serviceEvents[0];
+
+    assert.ok(push);
+    assert.ok(event);
+    assert.equal(push.kitchenDepartureTime, "21:22");
+    assert.equal(push.arriveFirstGateTime, "21:52");
+    assert.equal(event.serviceStart, "22:22");
+    assert.equal(minutesBetween(push.arriveFirstGateTime, "22:07"), 15);
+    assert.equal(minutesBetween("22:07", event.serviceStart), 15);
+  });
+
   it("limits push duration by final catering end before return drive for all kitchens", () => {
     const rules: PlanningRules = {
       ...planningRules,
