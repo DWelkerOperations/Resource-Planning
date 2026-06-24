@@ -37,9 +37,11 @@ type PlanningToolPageProps = {
   timelineDriverLabelMode?: "actual" | "sequential";
   showTimelineDriverRadio?: boolean;
   exportButtonLabel?: string;
+  maxAllowedStartTimes?: number;
   onDateChange: (date: string) => void;
   onOperationTypeChange: (operationType: OperationView) => void;
   onResultChange: (result: ScheduleResult | null) => void;
+  onMaxAllowedStartTimesChange?: (value: number) => void;
   onExport?: (payload: PlanningExportPayload) => void;
 };
 
@@ -76,9 +78,11 @@ export function PlanningToolPage({
   timelineDriverLabelMode = "actual",
   showTimelineDriverRadio = true,
   exportButtonLabel = "Export",
+  maxAllowedStartTimes = defaultMaxShiftBidStartTimes,
   onDateChange,
   onOperationTypeChange,
   onResultChange,
+  onMaxAllowedStartTimesChange,
   onExport,
 }: PlanningToolPageProps) {
   const [iterationSettings, setIterationSettings] = useState({
@@ -108,7 +112,7 @@ export function PlanningToolPage({
     };
 
     const firstPass = createSchedule(planningResources.drivers, planningResources.helpers, planningResources.trucks, false);
-    const selectedStartTimes = selectShiftBidStartTimes(firstPass.pushes, planningResources.drivers);
+    const selectedStartTimes = selectShiftBidStartTimes(firstPass.pushes, planningResources.drivers, maxAllowedStartTimes);
     const targetResources = createTargetResources(selectedStartTimes, targetResourcesPerStart, createTargetTruckPool(), rules);
     onResultChange(createSchedule(targetResources.drivers, targetResources.helpers, targetResources.trucks));
   }
@@ -127,6 +131,9 @@ export function PlanningToolPage({
           <div className="flex flex-wrap items-center gap-3">
             <DateFilter value={selectedDate} onChange={onDateChange} />
             <OperationToggle value={operationType} onChange={onOperationTypeChange} />
+            {onMaxAllowedStartTimesChange && (
+              <StartTimeLimitSelect value={maxAllowedStartTimes} onChange={onMaxAllowedStartTimesChange} />
+            )}
             <button onClick={handleCreatePairings} className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
               {createButtonLabel}
             </button>
@@ -198,6 +205,8 @@ export function PlanningToolPage({
 
 const strictUrgentPairingLimitPercent = 0;
 const standardThreeFlightPairingTargetPercent = 80;
+const minShiftBidStartTimes = 8;
+const maxShiftBidStartTimes = 16;
 
 function IterationControls({
   settings,
@@ -261,6 +270,24 @@ function IterationControls({
         />
       </div>
     </Panel>
+  );
+}
+
+function StartTimeLimitSelect({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+  return (
+    <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-ink shadow-sm">
+      <span className="text-xs font-medium text-slate-500">Start waves</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="bg-transparent text-sm font-semibold text-ink outline-none"
+        aria-label="Maximum start waves"
+      >
+        {Array.from({ length: maxShiftBidStartTimes - minShiftBidStartTimes + 1 }, (_, index) => minShiftBidStartTimes + index).map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -476,7 +503,7 @@ function driversUsedByPlan(drivers: Driver[], pushes: Push[]) {
 
 type StartWave = { startTime: string; driverStarts: number };
 
-const maxShiftBidStartTimes = 12;
+const defaultMaxShiftBidStartTimes = 12;
 const targetResourcesPerStart = 260;
 const shiftStartIncrementMinutes = 30;
 
@@ -599,7 +626,7 @@ function candidateShiftStartsForFlights(flights: FlightAssignment[], rules: Plan
   return normalizedShiftStarts(starts);
 }
 
-function selectShiftBidStartTimes(pushes: Push[], drivers: Driver[]) {
+function selectShiftBidStartTimes(pushes: Push[], drivers: Driver[], maxAllowedStartTimes: number) {
   const countedDrivers = new Set<string>();
   const waveCounts = new Map<string, number>();
 
@@ -616,8 +643,10 @@ function selectShiftBidStartTimes(pushes: Push[], drivers: Driver[]) {
     .map(([startTime, driverStarts]) => ({ startTime, driverStarts, minutes: timeToMinutes(startTime) }))
     .sort((a, b) => a.minutes - b.minutes);
 
-  while (waves.length > maxShiftBidStartTimes) {
-    const mergeIndex = lowestVolumeWaveIndex(waves);
+  const startTimeLimit = Math.max(minShiftBidStartTimes, Math.min(maxShiftBidStartTimes, maxAllowedStartTimes));
+
+  while (waves.length > startTimeLimit) {
+    const mergeIndex = lowestVolumeMergeableWaveIndex(waves);
     const neighborIndex = nearestWaveIndex(waves, mergeIndex);
     waves[neighborIndex].driverStarts += waves[mergeIndex].driverStarts;
     waves.splice(mergeIndex, 1);
@@ -643,7 +672,7 @@ function normalizedShiftStart(shiftStart: string) {
 }
 
 function displayStartForShiftStart(shiftStart: string) {
-  return shiftStart === overnightCoverageStart ? overnightDisplayStart : shiftStart;
+  return shiftStart;
 }
 
 function displayEndForShiftStart(_shiftStart: string, shiftEnd: string) {
@@ -659,12 +688,17 @@ function idPrefixForShiftStart(shiftStart: string) {
   return shiftStart.replace(":", "");
 }
 
-function lowestVolumeWaveIndex(waves: StartWaveWithMinutes[]) {
-  return waves.reduce((lowestIndex, wave, index) => {
+function lowestVolumeMergeableWaveIndex(waves: StartWaveWithMinutes[]) {
+  const mergeableWaves = waves
+    .map((wave, index) => ({ ...wave, index }))
+    .filter((wave) => wave.index > 0 && wave.index < waves.length - 1);
+  const candidates = mergeableWaves.length > 0 ? mergeableWaves : waves.map((wave, index) => ({ ...wave, index }));
+
+  return candidates.reduce((lowestIndex, wave) => {
     const lowest = waves[lowestIndex];
-    if (wave.driverStarts !== lowest.driverStarts) return wave.driverStarts < lowest.driverStarts ? index : lowestIndex;
-    return nearestGapMinutes(waves, index) < nearestGapMinutes(waves, lowestIndex) ? index : lowestIndex;
-  }, 0);
+    if (wave.driverStarts !== lowest.driverStarts) return wave.driverStarts < lowest.driverStarts ? wave.index : lowestIndex;
+    return nearestGapMinutes(waves, wave.index) < nearestGapMinutes(waves, lowestIndex) ? wave.index : lowestIndex;
+  }, candidates[0].index);
 }
 
 function nearestWaveIndex(waves: StartWaveWithMinutes[], index: number) {
