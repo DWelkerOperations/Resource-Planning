@@ -264,6 +264,7 @@ export type SitePlanningRules = {
   maxFlightsPerPush?: number;
   groupWindowMinutes?: number;
   maxWorkloadUnitsPerPush?: number;
+  maxDockDepartureToFinalServiceEndMinutes?: number;
   separateUnitedAndOtherAirlines?: boolean;
 };
 

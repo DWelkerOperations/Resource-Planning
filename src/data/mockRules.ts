@@ -15,6 +15,16 @@ export function ruleItemsFromPlanningRules(rules = planningRules): RuleItem[] {
   const driveReturnOverrideText = driveReturnOverrides.length > 0
     ? driveReturnOverrides.map((override) => `${override.site} ${override.driveOutMinutes}/${override.returnMinutes} min`).join("; ")
     : "None";
+  const gateMoveOverrides = Object.entries(siteOverrides)
+    .filter(([, override]) => override.gateToGateMoveMinutes !== undefined)
+    .map(([site, override]) => `${site} ${override.gateToGateMoveMinutes} min`);
+  const dockToFinalCateringOverrides = Object.entries(siteOverrides)
+    .filter(([, override]) => override.maxDockDepartureToFinalServiceEndMinutes !== undefined)
+    .map(([site, override]) => `${site} ${override.maxDockDepartureToFinalServiceEndMinutes} min`);
+  const globalDockToFinalCatering = rules.earliestCateringBeforeDepartureMinutes - rules.firstAircraftSetupMinutes;
+  const dockToFinalCateringText = dockToFinalCateringOverrides.length > 0
+    ? `All kitchens ${globalDockToFinalCatering} min; overrides: ${dockToFinalCateringOverrides.join("; ")}`
+    : `All kitchens ${globalDockToFinalCatering} min (${rules.earliestCateringBeforeDepartureMinutes} min food-safety max - ${rules.firstAircraftSetupMinutes} min dock load)`;
   const overrideSites = new Set(driveReturnOverrides.map((override) => override.site));
   const defaultSites = sampleAirportOptions.filter((site) => !overrideSites.has(site));
 
@@ -41,8 +51,9 @@ export function ruleItemsFromPlanningRules(rules = planningRules): RuleItem[] {
   { id: "r20", category: "Scope", setting: "Shift guide cancellations", value: "Out of scope; no cancellations" },
   { id: "r21", category: "Planning priority", setting: "Optimization order", value: "No delays, drivers, utilization, 3-flight pairings, idle, OT, trucks" },
   { id: "r22", category: "Drive / return", setting: "Site seal-break override", value: "Optional site override before service starts" },
-  { id: "r23", category: "Drive / return", setting: "Site gate-to-gate move", value: "Optional site override for between-gate route time" },
+  { id: "r23", category: "Drive / return", setting: "Site gate-to-gate move", value: gateMoveOverrides.length > 0 ? gateMoveOverrides.join("; ") : "Optional site override for between-gate route time" },
   { id: "r24", category: "Drive / return", setting: "Unload release", value: "15 min after return; driver and truck unavailable until complete" },
+  { id: "r25", category: "Food safety", setting: "Dock to final catering end", value: dockToFinalCateringText },
   ];
 }
 

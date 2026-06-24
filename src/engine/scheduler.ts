@@ -662,6 +662,13 @@ function evaluateRoute(flights: Flight[], rules: PlanningRules) {
   const loadStart = Math.max(0, kitchenDeparture - rules.firstAircraftSetupMinutes);
   const loadDurationMinutes = kitchenDeparture - loadStart;
   const arriveFirstGate = kitchenDeparture + driveOutMinutes;
+  const finalServiceEnd = currentStart;
+  const maxDockDepartureToFinalServiceEnd = maxDockDepartureToFinalServiceEndMinutesForSite(sortedFlights[0]?.originAirport, rules);
+  const dockDepartureToFinalServiceEnd = finalServiceEnd - kitchenDeparture;
+  if (maxDockDepartureToFinalServiceEnd !== undefined && dockDepartureToFinalServiceEnd > maxDockDepartureToFinalServiceEnd) {
+    isFeasible = false;
+    riskFlags.push(`Dock-to-final-catering = ${dockDepartureToFinalServiceEnd}m exceeds ${maxDockDepartureToFinalServiceEnd}m`);
+  }
   const returnKitchen = currentStart + returnMinutes;
   const pairingPenalty = sortedFlights.length === 1 && sortedFlights[0]?.aircraftCategory === "regional" ? 35 : 0;
   const score = sortedFlights.length * 100 - idleMinutes - riskFlags.length * 50 - pairingPenalty;
@@ -732,6 +739,11 @@ function sealBreakMinutesForSite(originAirport: Flight["originAirport"], rules: 
 
 function gateMoveMinutesForSite(originAirport: Flight["originAirport"], rules: PlanningRules) {
   return siteRules(rules, originAirport).gateToGateMoveMinutes ?? rules.gateToGateMoveMinutes;
+}
+
+function maxDockDepartureToFinalServiceEndMinutesForSite(originAirport: Flight["originAirport"], rules: PlanningRules) {
+  return siteRules(rules, originAirport).maxDockDepartureToFinalServiceEndMinutes
+    ?? rules.earliestCateringBeforeDepartureMinutes - rules.firstAircraftSetupMinutes;
 }
 
 function explainPairing(flights: Flight[]) {

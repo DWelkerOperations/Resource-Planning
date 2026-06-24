@@ -160,6 +160,69 @@ describe("scheduler", () => {
     assert.equal(minutesBetween(push.kitchenDepartureTime, push.arriveFirstGateTime), 45);
   });
 
+  it("uses ORD 30 minute drive, 30 minute return, and 10 minutes between catered flights", () => {
+    const rules: PlanningRules = {
+      ...planningRules,
+      siteOverrides: {
+        ...planningRules.siteOverrides,
+        ORD: { ...planningRules.siteOverrides?.ORD, preserveLunchWindow: false },
+      },
+    };
+    const result = createPlanningSchedule(
+      [
+        flight({ id: "f1", flightNumber: "UA100", aircraft: "737", etd: "12:00", originAirport: "ORD" }),
+        flight({ id: "f2", flightNumber: "UA101", aircraft: "737", etd: "12:35", gate: "B2", originAirport: "ORD" }),
+      ],
+      baseDrivers,
+      baseHelpers,
+      baseTrucks,
+      { rules, operationType: "mainline" },
+    );
+    const push = result.pushes[0];
+
+    assert.ok(push);
+    assert.equal(minutesBetween(push.kitchenDepartureTime, push.arriveFirstGateTime), 30);
+    assert.equal(minutesBetween(push.serviceEvents[0].serviceEnd, push.serviceEvents[1].serviceStart), 10);
+    assert.equal(minutesBetween(push.serviceEvents[1].serviceEnd, push.returnTime), 30);
+  });
+
+  it("limits push duration by final catering end before return drive for all kitchens", () => {
+    const rules: PlanningRules = {
+      ...planningRules,
+      siteOverrides: {
+        ...planningRules.siteOverrides,
+        ABC: { preserveLunchWindow: false },
+      },
+    };
+    const result = createPlanningSchedule(
+      [
+        flight({ id: "f1", flightNumber: "UA100", aircraft: "757", etd: "12:00", originAirport: "ABC" }),
+        flight({ id: "f2", flightNumber: "UA101", aircraft: "757", etd: "12:50", gate: "B2", originAirport: "ABC" }),
+        flight({ id: "f3", flightNumber: "UA102", aircraft: "757", etd: "13:40", gate: "B3", originAirport: "ABC" }),
+      ],
+      [
+        ...baseDrivers,
+        { id: "d3", name: "Driver 3", truck: "T3", radio: "R3", shiftStart: "06:00", shiftEnd: "14:30" },
+      ],
+      [
+        ...baseHelpers,
+        { id: "h3", name: "Helper 3", shiftStart: "06:00", shiftEnd: "14:30" },
+      ],
+      [
+        ...baseTrucks,
+        { id: "t3", truckNumber: "T3" },
+      ],
+      { rules, operationType: "mainline" },
+    );
+
+    assert.ok(result.pushes.length > 1);
+    assert.ok(result.pushes.every((push) => push.flights.length < 3));
+    assert.ok(result.pushes.every((push) => {
+      const finalServiceEnd = push.serviceEvents[push.serviceEvents.length - 1]?.serviceEnd;
+      return finalServiceEnd ? minutesBetween(push.kitchenDepartureTime, finalServiceEnd) <= 135 : true;
+    }));
+  });
+
   it("uses shared resource pool for sites configured that way", () => {
     const sharedRules: PlanningRules = {
       ...planningRules,

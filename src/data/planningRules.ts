@@ -29,6 +29,7 @@ export const planningRules: PlanningRules = {
     ORD: {
       driveOutMinutes: 30,
       returnMinutes: 30,
+      gateToGateMoveMinutes: 10,
       separateUnitedAndOtherAirlines: true,
     },
     PDX: {
