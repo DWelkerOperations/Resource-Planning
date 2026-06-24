@@ -37,7 +37,6 @@ export const planningRules: PlanningRules = {
       sealBreakMinutes: 5,
       gateToGateMoveMinutes: 5,
       allowShiftStretch: true,
-      preserveLunchWindow: false,
       preferredReuseWindowMinutes: 510,
       lateWavePenaltyPerMinute: 0,
       maxFlightsPerPush: 4,

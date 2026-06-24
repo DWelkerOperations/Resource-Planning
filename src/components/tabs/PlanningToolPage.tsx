@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Download } from "lucide-react";
+import { Download, Sparkles } from "lucide-react";
 import { mockFlights } from "../../data/mockFlights";
 import { planningRules } from "../../data/planningRules";
 import { mockTrucks } from "../../data/mockResources";
@@ -38,6 +38,7 @@ type PlanningToolPageProps = {
   showTimelineDriverRadio?: boolean;
   exportButtonLabel?: string;
   maxAllowedStartTimes?: number;
+  showSuperOptimize?: boolean;
   onDateChange: (date: string) => void;
   onOperationTypeChange: (operationType: OperationView) => void;
   onResultChange: (result: ScheduleResult | null) => void;
@@ -79,6 +80,7 @@ export function PlanningToolPage({
   showTimelineDriverRadio = true,
   exportButtonLabel = "Export",
   maxAllowedStartTimes = defaultMaxShiftBidStartTimes,
+  showSuperOptimize = false,
   onDateChange,
   onOperationTypeChange,
   onResultChange,
@@ -95,10 +97,16 @@ export function PlanningToolPage({
   const urgentPairingLimit = showIterationControls && iterationSettings.allowUrgentPairings ? iterationSettings.urgentPairingLimitPercent : strictUrgentPairingLimitPercent;
   const shouldEnforceUrgentPairingLimit = enforcePairingQuality || preventUrgentPairings;
   const targetThreeFlightPairingPercent = showIterationControls ? iterationSettings.targetThreeFlightPairingPercent : standardThreeFlightPairingTargetPercent;
-  const planningResources = useMemo(() => createPlanningResources(flights, runRules), [flights, runRules]);
+  const planningResources = useMemo(() => createPlanningResources(flights, runRules, defaultShiftStartIncrementMinutes), [flights, runRules]);
   const visibleResult = useMemo(() => result ? filterScheduleResultByOperation(result, operationType) : null, [operationType, result]);
 
-  function handleCreatePairings() {
+  function handleCreatePairings(options?: { maxStartTimes?: number; shiftStartIncrementMinutes?: number }) {
+    const shiftStartIncrementMinutes = options?.shiftStartIncrementMinutes ?? defaultShiftStartIncrementMinutes;
+    const activePlanningResources = shiftStartIncrementMinutes === defaultShiftStartIncrementMinutes
+      ? planningResources
+      : createPlanningResources(flights, runRules, shiftStartIncrementMinutes);
+    const maxStartTimes = options?.maxStartTimes ?? maxAllowedStartTimes;
+
     const createSchedule = (drivers: Driver[], helpers: Helper[], trucks: typeof planningResources.trucks, enforceQuality = true) => {
       const nextResult = createPlanningSchedule(flights, drivers, helpers, trucks, {
         rules: runRules,
@@ -111,8 +119,8 @@ export function PlanningToolPage({
       return rejectUnassignedPushes(urgentSafeResult);
     };
 
-    const firstPass = createSchedule(planningResources.drivers, planningResources.helpers, planningResources.trucks, false);
-    const selectedStartTimes = selectShiftBidStartTimes(firstPass.pushes, planningResources.drivers, maxAllowedStartTimes);
+    const firstPass = createSchedule(activePlanningResources.drivers, activePlanningResources.helpers, activePlanningResources.trucks, false);
+    const selectedStartTimes = selectShiftBidStartTimes(firstPass.pushes, activePlanningResources.drivers, maxStartTimes);
     const targetResources = createTargetResources(selectedStartTimes, targetResourcesPerStart, createTargetTruckPool(), rules);
     onResultChange(createSchedule(targetResources.drivers, targetResources.helpers, targetResources.trucks));
   }
@@ -134,9 +142,19 @@ export function PlanningToolPage({
             {onMaxAllowedStartTimesChange && (
               <StartTimeLimitSelect value={maxAllowedStartTimes} onChange={onMaxAllowedStartTimesChange} />
             )}
-            <button onClick={handleCreatePairings} className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
+            <button onClick={() => handleCreatePairings()} className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
               {createButtonLabel}
             </button>
+            {showSuperOptimize && (
+              <button
+                onClick={() => handleCreatePairings({ maxStartTimes: superOptimizeMaxShiftBidStartTimes, shiftStartIncrementMinutes: superOptimizeShiftStartIncrementMinutes })}
+                className="inline-flex items-center gap-2 rounded-xl bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-800"
+                title="Search up to 14 start waves in 15-minute increments"
+              >
+                <Sparkles size={16} aria-hidden="true" />
+                Super Optimize
+              </button>
+            )}
             {onExport && visibleResult && (
               <button
                 onClick={() => onExport({ result: visibleResult, startWaves, flights, selectedDate, operationType })}
@@ -354,10 +372,18 @@ function PairingQualityPanel({
     ? Math.round((threeFlightPairingCount / result.summary.totalPushes) * 100)
     : 0;
   const threeFlightTargetMet = targetThreeFlightPairingPercent === 0 || threeFlightPairingPercent >= targetThreeFlightPairingPercent;
-  const withinTarget = urgentPercent <= urgentPairingLimitPercent && coverage.missingFlights.length === 0 && threeFlightTargetMet;
+  const operationallyClean = urgentPercent <= urgentPairingLimitPercent && coverage.missingFlights.length === 0;
+  const panelTone = operationallyClean
+    ? threeFlightTargetMet
+      ? "border-emerald-200 bg-emerald-50/60"
+      : "border-amber-200 bg-amber-50/60"
+    : "border-red-200 bg-red-50/70";
+  const urgentTone = urgentPercent <= urgentPairingLimitPercent
+    ? "border-emerald-200 bg-white text-emerald-700"
+    : "border-red-200 bg-white text-red-700";
 
   return (
-    <Panel className={`p-4 ${withinTarget ? "border-emerald-200 bg-emerald-50/60" : "border-red-200 bg-red-50/70"}`}>
+    <Panel className={`p-4 ${panelTone}`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold text-ink">Pairing Quality</h3>
@@ -368,7 +394,7 @@ function PairingQualityPanel({
           <MiniMetric label="Missing Flights" value={coverage.missingFlights.length} />
           <MiniMetric label="Urgent Pairings" value={result.summary.urgentPushes} />
           <MiniMetric label="3-Flight Pairings" value={`${threeFlightPairingPercent}%`} />
-          <div className={`rounded-lg border px-3 py-2 text-sm font-semibold ${withinTarget ? "border-emerald-200 bg-white text-emerald-700" : "border-red-200 bg-white text-red-700"}`}>
+          <div className={`rounded-lg border px-3 py-2 text-sm font-semibold ${urgentTone}`}>
             {urgentPercent}% urgent
           </div>
         </div>
@@ -505,7 +531,9 @@ type StartWave = { startTime: string; driverStarts: number };
 
 const defaultMaxShiftBidStartTimes = 12;
 const targetResourcesPerStart = 260;
-const shiftStartIncrementMinutes = 30;
+const defaultShiftStartIncrementMinutes = 30;
+const superOptimizeMaxShiftBidStartTimes = 14;
+const superOptimizeShiftStartIncrementMinutes = 15;
 
 function createStartWaves(pushes: Push[], drivers: Driver[]): StartWave[] {
   const buckets = new Map<string, StartWave>();
@@ -547,8 +575,8 @@ function driverForResourceId(driverId: string, drivers: Driver[]): Driver {
     name: driverId,
     truck: "",
     radio: "",
-    shiftStart: overnightCoverageStart,
-    shiftEnd: overnightCoverageEnd,
+    shiftStart: overnightDisplayStart,
+    shiftEnd: overnightCoverageEndNextDay,
     displayShiftStart: overnightDisplayStart,
     displayShiftEnd: overnightCoverageEnd,
   };
@@ -564,8 +592,8 @@ function resourceOperationLabel(resourceId: string) {
   return "";
 }
 
-function createPlanningResources(flights: FlightAssignment[], rules: PlanningRules) {
-  return createTargetResources(candidateShiftStartsForFlights(flights, rules), targetResourcesPerStart, createTargetTruckPool(), rules);
+function createPlanningResources(flights: FlightAssignment[], rules: PlanningRules, shiftStartIncrementMinutes: number) {
+  return createTargetResources(candidateShiftStartsForFlights(flights, rules, shiftStartIncrementMinutes), targetResourcesPerStart, createTargetTruckPool(), rules);
 }
 
 function createTargetResources(shiftStarts: string[], resourcesPerStart: number, trucks: ReturnType<typeof createTargetTruckPool> | typeof mockTrucks, rules: PlanningRules) {
@@ -607,7 +635,7 @@ function createTargetResources(shiftStarts: string[], resourcesPerStart: number,
   };
 }
 
-function candidateShiftStartsForFlights(flights: FlightAssignment[], rules: PlanningRules) {
+function candidateShiftStartsForFlights(flights: FlightAssignment[], rules: PlanningRules, shiftStartIncrementMinutes: number) {
   const departureTimes = flights
     .map((flight) => timeToMinutes(flight.etd))
     .filter((minutes) => Number.isFinite(minutes));
@@ -615,8 +643,8 @@ function candidateShiftStartsForFlights(flights: FlightAssignment[], rules: Plan
 
   const firstDeparture = Math.min(...departureTimes);
   const lastDeparture = Math.max(...departureTimes);
-  const earliestCandidate = Math.max(0, snapToIncrement(firstDeparture - rules.maxKitchenDepartureBeforeDepartureMinutes - 15, "down"));
-  const latestCandidate = snapToIncrement(lastDeparture, "up");
+  const earliestCandidate = Math.max(0, snapToIncrement(firstDeparture - rules.maxKitchenDepartureBeforeDepartureMinutes - 15, shiftStartIncrementMinutes, "down"));
+  const latestCandidate = snapToIncrement(lastDeparture, shiftStartIncrementMinutes, "up");
   const starts: string[] = [];
 
   for (let minutes = earliestCandidate; minutes <= latestCandidate; minutes += shiftStartIncrementMinutes) {
@@ -660,6 +688,7 @@ function selectShiftBidStartTimes(pushes: Push[], drivers: Driver[], maxAllowedS
 const earliestGeneratedDayStartMinutes = 180;
 const overnightCoverageStart = "00:00";
 const overnightCoverageEnd = "03:00";
+const overnightCoverageEndNextDay = "27:00";
 const overnightDisplayStart = "18:30";
 
 function normalizedShiftStarts(shiftStarts: string[]) {
@@ -747,7 +776,8 @@ function minutesToTime(totalMinutes: number) {
   return `${String(Math.floor(totalMinutes / 60)).padStart(2, "0")}:${String(totalMinutes % 60).padStart(2, "0")}`;
 }
 
-function snapToIncrement(minutes: number, direction: "down" | "up") {
+function snapToIncrement(minutes: number, incrementMinutes: number, direction: "down" | "up") {
+  const shiftStartIncrementMinutes = Math.max(1, incrementMinutes);
   const quotient = minutes / shiftStartIncrementMinutes;
   return (direction === "down" ? Math.floor(quotient) : Math.ceil(quotient)) * shiftStartIncrementMinutes;
 }

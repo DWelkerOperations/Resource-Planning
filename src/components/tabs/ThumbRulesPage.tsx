@@ -243,7 +243,6 @@ function parseEditableRules(values: RuleValues, currentRules: PlanningRules): { 
   const defaultDriveMinutes = secondNumber(values.r4);
   const firstAircraftSetupMinutes = firstPositiveNumber(values.r5);
   const standardShiftHours = firstPositiveNumber(values.r6);
-  const idealLunchBeforeHour = firstPositiveNumber(values.r7);
   const serviceTimes = numbersFromText(values.r8);
   const helperRequiredForMainline = yesNoValue(values.r9);
   const maxFlightsPerPush = firstPositiveNumber(values.r14);
@@ -256,7 +255,6 @@ function parseEditableRules(values: RuleValues, currentRules: PlanningRules): { 
   if (defaultDriveMinutes === null) return invalid("Default drive / return time");
   if (firstAircraftSetupMinutes === null) return invalid("Load sequence");
   if (standardShiftHours === null) return invalid("Standard driver shift");
-  if (idealLunchBeforeHour === null) return invalid("Ideal lunch window");
   if (serviceTimes.length < 4) return invalid("Service times");
   if (helperRequiredForMainline === null) return invalid("Mainline helper required");
   if (maxFlightsPerPush === null) return invalid("Max flights per push");
@@ -276,7 +274,6 @@ function parseEditableRules(values: RuleValues, currentRules: PlanningRules): { 
       expressReturnMinutes: defaultDriveMinutes,
       firstAircraftSetupMinutes,
       standardShiftHours,
-      idealLunchBeforeHour,
       serviceMinutesByAircraftCategory: {
         ...currentRules.serviceMinutesByAircraftCategory,
         regional: serviceTimes[0],

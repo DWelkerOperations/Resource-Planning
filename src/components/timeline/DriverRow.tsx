@@ -69,11 +69,8 @@ function LunchBlock({ lunch, minuteWidth }: { lunch: LunchWindow; minuteWidth: n
 
 function scheduledLunch(pushes: Push[], plannedShift: ReturnType<typeof plannedShiftForDriver>): LunchWindow | null {
   const lunchMinutes = 30;
-  const shiftStartMinutes = plannedShift.startMinutes;
-  const requiredWindowStart = shiftStartMinutes + 180;
-  const requiredWindowEnd = Math.min(plannedShift.endMinutes, shiftStartMinutes + 300);
   const sortedPushes = [...pushes].sort((a, b) => timeToMinutes(a.kitchenDepartureTime) - timeToMinutes(b.kitchenDepartureTime));
-  const lunchStart = lunchInsideRequiredWindow(sortedPushes, requiredWindowStart, requiredWindowEnd, lunchMinutes);
+  const lunchStart = lunchInsideShift(sortedPushes, plannedShift.startMinutes, plannedShift.endMinutes, lunchMinutes);
   if (lunchStart === null) return null;
 
   return {
@@ -83,31 +80,29 @@ function scheduledLunch(pushes: Push[], plannedShift: ReturnType<typeof plannedS
   };
 }
 
-function lunchInsideRequiredWindow(pushes: Push[], requiredWindowStart: number, requiredWindowEnd: number, lunchMinutes: number) {
-  const postPushBufferMinutes = 10;
-  const prePushBufferMinutes = 10;
+function lunchInsideShift(pushes: Push[], shiftStart: number, shiftEnd: number, lunchMinutes: number) {
   const kitchenUnloadMinutes = 15;
   let bestGap: { start: number; end: number; idleMinutes: number } | null = null;
-  let availableStart = requiredWindowStart;
+  let availableStart = shiftStart;
 
   for (const push of pushes) {
     const pushDeparture = timeToMinutes(push.loadStartTime);
     const pushReturn = timeToMinutes(push.returnTime) + kitchenUnloadMinutes;
-    const gapStart = Math.max(availableStart, requiredWindowStart);
-    const gapEnd = Math.min(pushDeparture - prePushBufferMinutes, requiredWindowEnd);
+    const gapStart = Math.max(availableStart, shiftStart);
+    const gapEnd = Math.min(pushDeparture, shiftEnd);
     const idleMinutes = gapEnd - gapStart;
 
     if (idleMinutes >= lunchMinutes && (!bestGap || idleMinutes < bestGap.idleMinutes)) {
       bestGap = { start: gapStart, end: gapEnd, idleMinutes };
     }
 
-    if (pushReturn >= availableStart) availableStart = pushReturn + postPushBufferMinutes;
+    if (pushReturn >= availableStart) availableStart = pushReturn;
   }
 
-  const finalGapStart = Math.max(availableStart, requiredWindowStart);
-  const finalIdleMinutes = requiredWindowEnd - finalGapStart;
+  const finalGapStart = Math.max(availableStart, shiftStart);
+  const finalIdleMinutes = shiftEnd - finalGapStart;
   if (finalIdleMinutes >= lunchMinutes && (!bestGap || finalIdleMinutes < bestGap.idleMinutes)) {
-    bestGap = { start: finalGapStart, end: requiredWindowEnd, idleMinutes: finalIdleMinutes };
+    bestGap = { start: finalGapStart, end: shiftEnd, idleMinutes: finalIdleMinutes };
   }
 
   if (!bestGap) return null;

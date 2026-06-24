@@ -87,7 +87,7 @@ describe("scheduler", () => {
       drivers,
       helpers,
       trucks,
-      { rules: { ...planningRules, siteOverrides: { ABC: { preserveLunchWindow: false } } } },
+      { rules: planningRules },
     );
 
     assert.equal(result.summary.totalPushes, 2);
@@ -161,13 +161,6 @@ describe("scheduler", () => {
   });
 
   it("uses ORD 30 minute drive, 30 minute return, and 10 minutes between catered flights", () => {
-    const rules: PlanningRules = {
-      ...planningRules,
-      siteOverrides: {
-        ...planningRules.siteOverrides,
-        ORD: { ...planningRules.siteOverrides?.ORD, preserveLunchWindow: false },
-      },
-    };
     const result = createPlanningSchedule(
       [
         flight({ id: "f1", flightNumber: "UA100", aircraft: "737", etd: "12:00", originAirport: "ORD" }),
@@ -176,7 +169,7 @@ describe("scheduler", () => {
       baseDrivers,
       baseHelpers,
       baseTrucks,
-      { rules, operationType: "mainline" },
+      { rules: planningRules, operationType: "mainline" },
     );
     const push = result.pushes[0];
 
@@ -218,13 +211,6 @@ describe("scheduler", () => {
   });
 
   it("limits push duration by final catering end before return drive for all kitchens", () => {
-    const rules: PlanningRules = {
-      ...planningRules,
-      siteOverrides: {
-        ...planningRules.siteOverrides,
-        ABC: { preserveLunchWindow: false },
-      },
-    };
     const result = createPlanningSchedule(
       [
         flight({ id: "f1", flightNumber: "UA100", aircraft: "757", etd: "12:00", originAirport: "ABC" }),
@@ -243,7 +229,7 @@ describe("scheduler", () => {
         ...baseTrucks,
         { id: "t3", truckNumber: "T3" },
       ],
-      { rules, operationType: "mainline" },
+      { rules: planningRules, operationType: "mainline" },
     );
 
     assert.ok(result.pushes.length > 1);
@@ -259,7 +245,7 @@ describe("scheduler", () => {
       ...planningRules,
       siteOverrides: {
         ...planningRules.siteOverrides,
-        ABC: { sharedResourcePool: true, preserveLunchWindow: false },
+        ABC: { sharedResourcePool: true },
       },
     };
     const result = createPlanningSchedule(
@@ -277,8 +263,8 @@ describe("scheduler", () => {
     assert.ok(result.pushes.every((push) => !push.id.startsWith("M-") && !push.id.startsWith("E-")));
   });
 
-  it("preserves lunch windows unless a site override disables that guardrail", () => {
-    const constrained = createPlanningSchedule(
+  it("requires only a 30 minute lunch gap without a protected window", () => {
+    const result = createPlanningSchedule(
       [
         flight({ id: "f1", flightNumber: "UA100", etd: "10:00", originAirport: "ABC" }),
         flight({ id: "f2", flightNumber: "UA101", etd: "10:35", gate: "A2", originAirport: "ABC" }),
@@ -288,27 +274,9 @@ describe("scheduler", () => {
       baseTrucks,
       { rules: planningRules },
     );
-    const relaxedRules: PlanningRules = {
-      ...planningRules,
-      siteOverrides: {
-        ...planningRules.siteOverrides,
-        ABC: { preserveLunchWindow: false },
-      },
-    };
-    const relaxed = createPlanningSchedule(
-      [
-        flight({ id: "f1", flightNumber: "UA100", etd: "10:00", originAirport: "ABC" }),
-        flight({ id: "f2", flightNumber: "UA101", etd: "10:35", gate: "A2", originAirport: "ABC" }),
-      ],
-      baseDrivers,
-      baseHelpers,
-      baseTrucks,
-      { rules: relaxedRules },
-    );
 
-    assert.equal(constrained.summary.driversRequired, 0);
-    assert.equal(constrained.summary.unscheduledFlights, 2);
-    assert.ok(relaxed.summary.driversRequired > constrained.summary.driversRequired);
+    assert.ok(result.summary.driversRequired > 0);
+    assert.equal(result.summary.unscheduledFlights, 0);
   });
 
   it("rejects critical pairings into exceptions", () => {

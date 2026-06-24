@@ -26,7 +26,7 @@ export function FlightPuck({ flight, driver }: FlightPuckProps) {
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`group absolute top-1.5 flex h-6 cursor-grab items-center justify-between gap-1 rounded-lg border px-2 text-[11px] font-medium shadow-sm transition active:cursor-grabbing hover:z-30 hover:-translate-y-0.5 hover:shadow-md ${serviceStyle(flight.serviceType)} ${flight.edited ? "ring-2 ring-blue-500 ring-offset-1" : ""} ${flight.overtime ? "outline outline-2 outline-red-300" : ""} ${isLunch ? "justify-center rounded-full border-red-400 bg-white text-red-600" : ""} ${isDragging ? "z-50 opacity-75 shadow-lg" : ""}`}
+      className={`group absolute top-1.5 flex h-6 cursor-grab items-center justify-between gap-1 rounded-lg border px-2 text-[11px] font-medium shadow-sm transition active:cursor-grabbing hover:z-30 hover:-translate-y-0.5 hover:shadow-md ${serviceStyle(flight.serviceType)} ${flight.edited ? "ring-2 ring-blue-500 ring-offset-1" : ""} ${flight.overtime ? "outline outline-2 outline-red-300" : ""} ${isLunch ? "justify-center rounded-full border-slate-300 bg-white text-slate-600" : ""} ${isDragging ? "z-50 opacity-75 shadow-lg" : ""}`}
       style={{
         left: minutesFromStart(flight.start) * minuteWidth,
         width: isLunch ? 34 : durationMinutes(flight.start, flight.end) * minuteWidth,

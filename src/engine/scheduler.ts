@@ -972,9 +972,8 @@ function crewSelectionPreservesLunch(items: ResourcePoolItem[], departure: numbe
   return items.length > 0 && items.every((item) => preservesOperationalBreak(item, departure, returnTime, rules, push));
 }
 
-function preservesOperationalBreak(item: ResourcePoolItem, departure: number, returnTime: number, rules: PlanningRules, push: Push) {
-  if (push.flights.every((flight) => siteRules(rules, flight.originAirport).preserveLunchWindow === false)) return true;
-  return preservesLunchWindow(item, departure, returnTime, rules);
+function preservesOperationalBreak(item: ResourcePoolItem, departure: number, returnTime: number, rules: PlanningRules, _push: Push) {
+  return preservesLunchGap(item, departure, returnTime, rules);
 }
 
 function siteRules(rules: PlanningRules, siteCode?: string) {
@@ -1070,29 +1069,25 @@ function fitsStandardShift(item: ResourcePoolItem, departure: number, returnTime
   return returnTime <= shiftStart + standardShiftSpanMinutes(rules);
 }
 
-function preservesLunchWindow(item: ResourcePoolItem, departure: number, returnTime: number, rules: PlanningRules) {
+function preservesLunchGap(item: ResourcePoolItem, departure: number, returnTime: number, rules: PlanningRules) {
   const shiftStart = item.shiftStart ?? snapDown((item.firstDeparture ?? departure) - 15, rules);
   const shiftEnd = item.shiftEnd ?? shiftStart + standardShiftSpanMinutes(rules);
-  const lunchWindowStart = shiftStart + 180;
-  const lunchWindowEnd = Math.min(shiftEnd, shiftStart + rules.idealLunchBeforeHour * 60);
-  if (lunchWindowEnd - lunchWindowStart < rules.lunchMinutes) return false;
+  if (shiftEnd - shiftStart < rules.lunchMinutes) return false;
 
   const assignments = [...item.assignments, { start: departure, end: returnTime }]
     .sort((a, b) => a.start - b.start);
 
-  return hasLunchGap(assignments, lunchWindowStart, lunchWindowEnd, rules.lunchMinutes);
+  return hasLunchGap(assignments, shiftStart, shiftEnd, rules.lunchMinutes);
 }
 
 function hasLunchGap(assignments: ResourceAssignment[], windowStart: number, windowEnd: number, lunchMinutes: number) {
-  const postPushBufferMinutes = 10;
-  const prePushBufferMinutes = 10;
   let availableStart = windowStart;
 
   for (const assignment of assignments) {
     const gapStart = Math.max(availableStart, windowStart);
-    const gapEnd = Math.min(assignment.start - prePushBufferMinutes, windowEnd);
+    const gapEnd = Math.min(assignment.start, windowEnd);
     if (gapEnd - gapStart >= lunchMinutes) return true;
-    if (assignment.end >= availableStart) availableStart = assignment.end + postPushBufferMinutes;
+    if (assignment.end >= availableStart) availableStart = assignment.end;
   }
 
   return windowEnd - Math.max(availableStart, windowStart) >= lunchMinutes;

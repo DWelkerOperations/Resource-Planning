@@ -246,7 +246,7 @@ export default function App() {
           readyDescription={`${resourceGuideVisibleFlights.length} flights are loaded for ${resourceGuideDate}. Import the schedule you want to plan, confirm the site and date, then create guidance to see the recommended resource levels and start waves.`}
           createButtonLabel="Create Guidance"
           assumptionTitle="Guidelines Applied"
-          assumptionDescription={`This guidance uses the loaded flight schedule as the demand source, not an existing driver schedule. It plans mainline and express independently unless the active site's rules define a shared resource pool, then shows ${resourceGuideOperationType === "all" ? "the combined total" : `the ${resourceGuideOperationType} view`}. It protects required completion times, drive time, food safety windows, and lunch placement, then chooses up to ${resourceGuideMaxStartTimes} hour or half-hour start waves for the most efficient driver shift utilization it can find.`}
+          assumptionDescription={`This guidance uses the loaded flight schedule as the demand source, not an existing driver schedule. It plans mainline and express independently unless the active site's rules define a shared resource pool, then shows ${resourceGuideOperationType === "all" ? "the combined total" : `the ${resourceGuideOperationType} view`}. It protects required completion times, drive time, food safety windows, and a 30-minute lunch gap with no protection window, then chooses up to ${resourceGuideMaxStartTimes} hour or half-hour start waves. Super Optimize searches up to 14 start waves in 15-minute increments.`}
           resourcePlanPosition="above-timeline"
           resourcePlanTitle="Resource Guidance"
           resourcePlanDescription="Recommended driver, helper, and truck needs by start wave."
@@ -258,6 +258,7 @@ export default function App() {
           showTimelineDriverRadio={false}
           exportButtonLabel="Export Excel"
           maxAllowedStartTimes={resourceGuideMaxStartTimes}
+          showSuperOptimize
           onDateChange={handleResourceGuideDateChange}
           onExport={(payload) => exportResourceGuideWorkbook({
             ...payload,

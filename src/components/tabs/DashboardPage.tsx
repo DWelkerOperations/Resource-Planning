@@ -14,7 +14,7 @@ export function DashboardPage() {
         <KpiCard label="Flights Covered" value="156" helper="98% covered" icon={<Plane size={20} />} />
         <KpiCard label="Exceptions" value="5" helper="2 high priority" icon={<AlertTriangle size={20} />} />
       </div>
-      <Panel className="p-5"><h3 className="text-base font-semibold text-ink">Operational Snapshot</h3><p className="mt-2 text-sm leading-6 text-slate-600">Morning coverage is stable. Main attention areas are lunch protection, one truck overlap, and a late unplanned UA flight.</p></Panel>
+      <Panel className="p-5"><h3 className="text-base font-semibold text-ink">Operational Snapshot</h3><p className="mt-2 text-sm leading-6 text-slate-600">Morning coverage is stable. Main attention areas are lunch gaps, one truck overlap, and a late unplanned UA flight.</p></Panel>
     </div>
   );
 }
