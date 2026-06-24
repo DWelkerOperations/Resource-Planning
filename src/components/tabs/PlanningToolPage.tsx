@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Download, Sparkles } from "lucide-react";
+import { Download } from "lucide-react";
 import { mockFlights } from "../../data/mockFlights";
 import { planningRules } from "../../data/planningRules";
 import { mockTrucks } from "../../data/mockResources";
@@ -38,7 +38,6 @@ type PlanningToolPageProps = {
   showTimelineDriverRadio?: boolean;
   exportButtonLabel?: string;
   maxAllowedStartTimes?: number;
-  showSuperOptimize?: boolean;
   onDateChange: (date: string) => void;
   onOperationTypeChange: (operationType: OperationView) => void;
   onResultChange: (result: ScheduleResult | null) => void;
@@ -80,7 +79,6 @@ export function PlanningToolPage({
   showTimelineDriverRadio = true,
   exportButtonLabel = "Export",
   maxAllowedStartTimes = defaultMaxShiftBidStartTimes,
-  showSuperOptimize = false,
   onDateChange,
   onOperationTypeChange,
   onResultChange,
@@ -145,16 +143,6 @@ export function PlanningToolPage({
             <button onClick={() => handleCreatePairings()} className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
               {createButtonLabel}
             </button>
-            {showSuperOptimize && (
-              <button
-                onClick={() => handleCreatePairings({ maxStartTimes: superOptimizeMaxShiftBidStartTimes, shiftStartIncrementMinutes: superOptimizeShiftStartIncrementMinutes })}
-                className="inline-flex items-center gap-2 rounded-xl bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-800"
-                title="Search up to 14 start waves in 15-minute increments"
-              >
-                <Sparkles size={16} aria-hidden="true" />
-                Super Optimize
-              </button>
-            )}
             {onExport && visibleResult && (
               <button
                 onClick={() => onExport({ result: visibleResult, startWaves, flights, selectedDate, operationType })}
@@ -532,8 +520,6 @@ type StartWave = { startTime: string; driverStarts: number };
 const defaultMaxShiftBidStartTimes = 12;
 const targetResourcesPerStart = 260;
 const defaultShiftStartIncrementMinutes = 30;
-const superOptimizeMaxShiftBidStartTimes = 14;
-const superOptimizeShiftStartIncrementMinutes = 15;
 
 function createStartWaves(pushes: Push[], drivers: Driver[]): StartWave[] {
   const buckets = new Map<string, StartWave>();

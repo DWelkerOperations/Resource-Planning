@@ -958,6 +958,10 @@ function bestReusableResource(pool: ResourcePoolItem[], departure: number, retur
 }
 
 function compareShiftResources(a: ResourcePoolItem, b: ResourcePoolItem, departure: number, rules: PlanningRules, push?: Push) {
+  const aHasWork = a.assignedCount > 0;
+  const bHasWork = b.assignedCount > 0;
+  if (aHasWork !== bHasWork) return aHasWork ? -1 : 1;
+
   const scoreDelta = shiftResourceScore(b, departure, rules, push) - shiftResourceScore(a, departure, rules, push);
   if (scoreDelta !== 0) return scoreDelta;
   return b.availableAt - a.availableAt;

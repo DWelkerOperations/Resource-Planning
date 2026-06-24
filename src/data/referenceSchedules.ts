@@ -1,4 +1,5 @@
 import type { AirportCode, FlightAssignment } from "../types/dispatch";
+import { ordJuneTripmasterDefaultAirport, ordJuneTripmasterDefaultDate, ordJuneTripmasterFileName, ordJuneTripmasterFlights } from "./ordJuneTripmasterFlights";
 import { ordMay14DefaultAirport, ordMay14DefaultDate, ordMay14FileName, ordMay14Flights } from "./ordMay14Flights";
 import { pdxJune11DefaultAirport, pdxJune11DefaultDate, pdxJune11FileName, pdxJune11Flights } from "./pdxJune11Flights";
 
@@ -11,7 +12,17 @@ export type ReferenceSchedule = {
   flights: FlightAssignment[];
 };
 
+export const ordJuneTripmasterReferenceId = "ord-2026-06-tripmaster";
+
 export const referenceSchedules: ReferenceSchedule[] = [
+  {
+    id: ordJuneTripmasterReferenceId,
+    label: "ORD June TripMaster",
+    fileName: ordJuneTripmasterFileName,
+    airport: ordJuneTripmasterDefaultAirport,
+    date: ordJuneTripmasterDefaultDate,
+    flights: ordJuneTripmasterFlights,
+  },
   {
     id: "pdx-2026-06-11",
     label: "PDX June 11",

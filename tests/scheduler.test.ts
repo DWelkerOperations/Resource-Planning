@@ -95,6 +95,39 @@ describe("scheduler", () => {
     assert.deepEqual(result.pushes.map((push) => push.flights.length), [3, 3]);
   });
 
+  it("prioritizes a previously assigned legal driver over opening a fresh shift", () => {
+    const drivers: Driver[] = [
+      { id: "d-early", name: "Early Driver", truck: "T1", radio: "R1", shiftStart: "06:00", shiftEnd: "16:30" },
+      { id: "d-later", name: "Later Driver", truck: "T2", radio: "R2", shiftStart: "10:00", shiftEnd: "18:30" },
+    ];
+    const helpers: Helper[] = [
+      { id: "h-early", name: "Early Helper", shiftStart: "06:00", shiftEnd: "16:30" },
+      { id: "h-later", name: "Later Helper", shiftStart: "10:00", shiftEnd: "18:30" },
+    ];
+    const rules: PlanningRules = {
+      ...planningRules,
+      siteOverrides: {
+        ...planningRules.siteOverrides,
+        ABC: { preserveLunchWindow: false },
+      },
+    };
+
+    const result = createPlanningSchedule(
+      [
+        flight({ id: "f1", flightNumber: "UA100", etd: "10:00", gate: "A1", originAirport: "ABC" }),
+        flight({ id: "f2", flightNumber: "UA101", etd: "14:00", gate: "A2", originAirport: "ABC" }),
+      ],
+      drivers,
+      helpers,
+      baseTrucks,
+      { rules },
+    );
+
+    assert.equal(result.summary.totalPushes, 2);
+    assert.equal(result.summary.driversRequired, 1);
+    assert.deepEqual([...new Set(result.pushes.map((push) => push.driverId))], ["mainline-d-early"]);
+  });
+
   it("marks unknown aircraft as critical timing risk", () => {
     const result = createPlanningSchedule(
       [flight({ aircraft: "Unknown", etd: "10:00" })],

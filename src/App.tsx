@@ -8,35 +8,35 @@ import { PlanningToolPage } from "./components/tabs/PlanningToolPage";
 import { StaffingPage } from "./components/tabs/StaffingPage";
 import { ThumbRulesPage } from "./components/tabs/ThumbRulesPage";
 import { TourSheetPage } from "./components/tabs/TourSheetPage";
-import { ordMay14DefaultAirport, ordMay14DefaultDate, ordMay14FileName, ordMay14Flights } from "./data/ordMay14Flights";
+import { ordJuneTripmasterDefaultAirport, ordJuneTripmasterDefaultDate, ordJuneTripmasterFileName, ordJuneTripmasterFlights } from "./data/ordJuneTripmasterFlights";
 import { planningRules as defaultPlanningRules } from "./data/planningRules";
-import { referenceSchedules, type ReferenceSchedule } from "./data/referenceSchedules";
+import { ordJuneTripmasterReferenceId, referenceSchedules, type ReferenceSchedule } from "./data/referenceSchedules";
 import { exportResourceGuideWorkbook } from "./export/resourceGuideExport";
 import type { AirportCode, AppTab, FlightAssignment, OperationView, PlanningRules, ScheduleResult } from "./types/dispatch";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<AppTab>("resource-guide");
-  const [planningAirport, setPlanningAirport] = useState<AirportCode>(ordMay14DefaultAirport);
-  const [planningDate, setPlanningDate] = useState(ordMay14DefaultDate);
-  const [planningFlights, setPlanningFlights] = useState<FlightAssignment[]>(ordMay14Flights);
-  const [planningFileName, setPlanningFileName] = useState<string>(ordMay14FileName);
-  const [planningReferenceScheduleId, setPlanningReferenceScheduleId] = useState("");
+  const [planningAirport, setPlanningAirport] = useState<AirportCode>(ordJuneTripmasterDefaultAirport);
+  const [planningDate, setPlanningDate] = useState(ordJuneTripmasterDefaultDate);
+  const [planningFlights, setPlanningFlights] = useState<FlightAssignment[]>(ordJuneTripmasterFlights);
+  const [planningFileName, setPlanningFileName] = useState<string>(ordJuneTripmasterFileName);
+  const [planningReferenceScheduleId, setPlanningReferenceScheduleId] = useState(ordJuneTripmasterReferenceId);
   const [planningOperationType, setPlanningOperationType] = useState<OperationView>("mainline");
   const [planningResult, setPlanningResult] = useState<ScheduleResult | null>(null);
   const [activeRules, setActiveRules] = useState<PlanningRules>(defaultPlanningRules);
-  const [resourceGuideAirport, setResourceGuideAirport] = useState<AirportCode>(ordMay14DefaultAirport);
-  const [resourceGuideDate, setResourceGuideDate] = useState(ordMay14DefaultDate);
-  const [resourceGuideFlights, setResourceGuideFlights] = useState<FlightAssignment[]>(ordMay14Flights);
-  const [resourceGuideFileName, setResourceGuideFileName] = useState<string>(ordMay14FileName);
-  const [resourceGuideReferenceScheduleId, setResourceGuideReferenceScheduleId] = useState("");
+  const [resourceGuideAirport, setResourceGuideAirport] = useState<AirportCode>(ordJuneTripmasterDefaultAirport);
+  const [resourceGuideDate, setResourceGuideDate] = useState(ordJuneTripmasterDefaultDate);
+  const [resourceGuideFlights, setResourceGuideFlights] = useState<FlightAssignment[]>(ordJuneTripmasterFlights);
+  const [resourceGuideFileName, setResourceGuideFileName] = useState<string>(ordJuneTripmasterFileName);
+  const [resourceGuideReferenceScheduleId, setResourceGuideReferenceScheduleId] = useState(ordJuneTripmasterReferenceId);
   const [resourceGuideOperationType, setResourceGuideOperationType] = useState<OperationView>("mainline");
   const [resourceGuideResult, setResourceGuideResult] = useState<ScheduleResult | null>(null);
   const [resourceGuideMaxStartTimes, setResourceGuideMaxStartTimes] = useState(12);
-  const [ordPlannerAirport, setOrdPlannerAirport] = useState<AirportCode>(ordMay14DefaultAirport);
-  const [ordPlannerDate, setOrdPlannerDate] = useState(ordMay14DefaultDate);
-  const [ordPlannerFlights, setOrdPlannerFlights] = useState<FlightAssignment[]>(ordMay14Flights);
-  const [ordPlannerFileName, setOrdPlannerFileName] = useState<string>(ordMay14FileName);
-  const [ordPlannerReferenceScheduleId, setOrdPlannerReferenceScheduleId] = useState("");
+  const [ordPlannerAirport, setOrdPlannerAirport] = useState<AirportCode>(ordJuneTripmasterDefaultAirport);
+  const [ordPlannerDate, setOrdPlannerDate] = useState(ordJuneTripmasterDefaultDate);
+  const [ordPlannerFlights, setOrdPlannerFlights] = useState<FlightAssignment[]>(ordJuneTripmasterFlights);
+  const [ordPlannerFileName, setOrdPlannerFileName] = useState<string>(ordJuneTripmasterFileName);
+  const [ordPlannerReferenceScheduleId, setOrdPlannerReferenceScheduleId] = useState(ordJuneTripmasterReferenceId);
   const [ordPlannerOperationType, setOrdPlannerOperationType] = useState<OperationView>("mainline");
   const [ordPlannerResult, setOrdPlannerResult] = useState<ScheduleResult | null>(null);
   const [ordPlannerMaxStartTimes, setOrdPlannerMaxStartTimes] = useState(12);
@@ -65,7 +65,7 @@ export default function App() {
     if (activeTab === "resource-guide") {
       setResourceGuideFlights(flights);
       setResourceGuideFileName(fileName);
-      setResourceGuideReferenceScheduleId("");
+      setResourceGuideReferenceScheduleId(ordJuneTripmasterReferenceId);
       setResourceGuideResult(null);
       if (firstImportedAirport) setResourceGuideAirport(firstImportedAirport);
       if (firstImportedDate) setResourceGuideDate(firstImportedDate);
@@ -74,7 +74,7 @@ export default function App() {
     if (activeTab === "ord-planner") {
       setOrdPlannerFlights(flights);
       setOrdPlannerFileName(fileName);
-      setOrdPlannerReferenceScheduleId("");
+      setOrdPlannerReferenceScheduleId(ordJuneTripmasterReferenceId);
       setOrdPlannerResult(null);
       setOrdPlannerAirport("ORD");
       if (firstImportedDate) setOrdPlannerDate(firstImportedDate);
@@ -83,7 +83,7 @@ export default function App() {
 
     setPlanningFlights(flights);
     setPlanningFileName(fileName);
-    setPlanningReferenceScheduleId("");
+    setPlanningReferenceScheduleId(ordJuneTripmasterReferenceId);
     setPlanningResult(null);
     if (firstImportedAirport) setPlanningAirport(firstImportedAirport);
     if (firstImportedDate) setPlanningDate(firstImportedDate);
@@ -91,29 +91,29 @@ export default function App() {
 
   function handleScheduleClear() {
     if (activeTab === "resource-guide") {
-      setResourceGuideFlights(ordMay14Flights);
-      setResourceGuideFileName(ordMay14FileName);
+      setResourceGuideFlights(ordJuneTripmasterFlights);
+      setResourceGuideFileName(ordJuneTripmasterFileName);
       setResourceGuideReferenceScheduleId("");
-      setResourceGuideAirport(ordMay14DefaultAirport);
-      setResourceGuideDate(ordMay14DefaultDate);
+      setResourceGuideAirport(ordJuneTripmasterDefaultAirport);
+      setResourceGuideDate(ordJuneTripmasterDefaultDate);
       setResourceGuideResult(null);
       return;
     }
     if (activeTab === "ord-planner") {
-      setOrdPlannerFlights(ordMay14Flights);
-      setOrdPlannerFileName(ordMay14FileName);
+      setOrdPlannerFlights(ordJuneTripmasterFlights);
+      setOrdPlannerFileName(ordJuneTripmasterFileName);
       setOrdPlannerReferenceScheduleId("");
-      setOrdPlannerAirport(ordMay14DefaultAirport);
-      setOrdPlannerDate(ordMay14DefaultDate);
+      setOrdPlannerAirport(ordJuneTripmasterDefaultAirport);
+      setOrdPlannerDate(ordJuneTripmasterDefaultDate);
       setOrdPlannerResult(null);
       return;
     }
 
-    setPlanningFlights(ordMay14Flights);
-    setPlanningFileName(ordMay14FileName);
+    setPlanningFlights(ordJuneTripmasterFlights);
+    setPlanningFileName(ordJuneTripmasterFileName);
     setPlanningReferenceScheduleId("");
-    setPlanningAirport(ordMay14DefaultAirport);
-    setPlanningDate(ordMay14DefaultDate);
+    setPlanningAirport(ordJuneTripmasterDefaultAirport);
+    setPlanningDate(ordJuneTripmasterDefaultDate);
     setPlanningResult(null);
   }
 
@@ -245,7 +245,7 @@ export default function App() {
           readyDescription={`${resourceGuideVisibleFlights.length} flights are loaded for ${resourceGuideDate}. Import the schedule you want to plan, confirm the site and date, then create guidance to see the recommended resource levels and start waves.`}
           createButtonLabel="Create Guidance"
           assumptionTitle="Guidelines Applied"
-          assumptionDescription={`This guidance uses the loaded flight schedule as the demand source, not an existing driver schedule. It plans mainline and express independently unless the active site's rules define a shared resource pool, then shows ${resourceGuideOperationType === "all" ? "the combined total" : `the ${resourceGuideOperationType} view`}. It protects required completion times, drive time, food safety windows, and a 30-minute lunch gap with no protection window, then chooses up to ${resourceGuideMaxStartTimes} hour or half-hour start waves. Super Optimize searches up to 14 start waves in 15-minute increments.`}
+          assumptionDescription={`This guidance uses the loaded flight schedule as the demand source, not an existing driver schedule. It plans mainline and express independently unless the active site's rules define a shared resource pool, then shows ${resourceGuideOperationType === "all" ? "the combined total" : `the ${resourceGuideOperationType} view`}. It protects required completion times, drive time, food safety windows, and a 30-minute lunch gap with no protection window, then chooses up to ${resourceGuideMaxStartTimes} hour or half-hour start waves.`}
           resourcePlanPosition="above-timeline"
           resourcePlanTitle="Resource Guidance"
           resourcePlanDescription="Recommended driver, helper, and truck needs by start wave."
@@ -257,7 +257,6 @@ export default function App() {
           showTimelineDriverRadio={false}
           exportButtonLabel="Export Excel"
           maxAllowedStartTimes={resourceGuideMaxStartTimes}
-          showSuperOptimize
           onDateChange={handleResourceGuideDateChange}
           onExport={(payload) => exportResourceGuideWorkbook({
             ...payload,
