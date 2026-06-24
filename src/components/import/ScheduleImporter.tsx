@@ -144,6 +144,7 @@ function formatLabel(format: ScheduleImportResult["detectedFormat"]) {
     "combined-flight": "combined flight schedule",
     "flight-overview": "flight overview schedule",
     "operation-plan": "operation plan schedule",
+    "ua-turns": "UA turns report",
   }[format];
 }
 

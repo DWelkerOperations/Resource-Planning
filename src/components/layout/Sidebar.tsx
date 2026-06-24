@@ -1,8 +1,9 @@
-import { AlertTriangle, BarChart3, CalendarClock, ClipboardCheck, FileSpreadsheet, Menu, Radio, Ruler, Settings, Truck, Users } from "lucide-react";
+import { AlertTriangle, BarChart3, CalendarClock, ClipboardCheck, FileSpreadsheet, MapPinned, Menu, Radio, Ruler, Settings, Truck, Users } from "lucide-react";
 import type { AppTab } from "../../types/dispatch";
 
 const navItems = [
   { id: "resource-guide", label: "Resource", icon: ClipboardCheck },
+  { id: "ord-planner", label: "ORD", icon: MapPinned },
   { id: "planning", label: "Plan", icon: CalendarClock },
   { id: "dispatch", label: "Dispatch", icon: Radio },
   { id: "staffing", label: "Staff", icon: Users },

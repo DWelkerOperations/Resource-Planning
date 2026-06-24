@@ -1153,8 +1153,9 @@ function buildResult(mode: "planning" | "dispatch", pushes: Push[], exceptions: 
   const allTasks = evaluatedPushes.flatMap((push) => push.flights);
   const plannedTaskIds = new Set(allTasks.map((flight) => flight.id));
   const coveredTaskIds = new Set([...plannedTaskIds, ...exceptionFlightIds]);
-  const coveredOutboundFlightIds = [...coveredTaskIds].filter((flightId) => !flightId.endsWith("-intl-strip"));
-  const coveredStripTaskIds = [...coveredTaskIds].filter((flightId) => flightId.endsWith("-intl-strip"));
+  const stripTaskIds = new Set(allTasks.filter((flight) => flight.serviceType === "intl-strip").map((flight) => flight.id));
+  const coveredOutboundFlightIds = [...coveredTaskIds].filter((flightId) => !flightId.endsWith("-intl-strip") && !stripTaskIds.has(flightId));
+  const coveredStripTaskIds = [...coveredTaskIds].filter((flightId) => flightId.endsWith("-intl-strip") || stripTaskIds.has(flightId));
   const driverIds = new Set(evaluatedPushes.flatMap((push) => resourceIds(push.driverId)));
   const helperIds = new Set(evaluatedPushes.flatMap((push) => resourceIds(push.helperId).filter((id) => id !== "needed")));
   const truckIds = new Set(evaluatedPushes.flatMap((push) => truckIdsForPush(push.truckId)));

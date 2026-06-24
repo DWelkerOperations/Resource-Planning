@@ -33,6 +33,14 @@ export default function App() {
   const [resourceGuideOperationType, setResourceGuideOperationType] = useState<OperationView>("mainline");
   const [resourceGuideResult, setResourceGuideResult] = useState<ScheduleResult | null>(null);
   const [resourceGuideMaxStartTimes, setResourceGuideMaxStartTimes] = useState(12);
+  const [ordPlannerAirport, setOrdPlannerAirport] = useState<AirportCode>(ordMay14DefaultAirport);
+  const [ordPlannerDate, setOrdPlannerDate] = useState(ordMay14DefaultDate);
+  const [ordPlannerFlights, setOrdPlannerFlights] = useState<FlightAssignment[]>(ordMay14Flights);
+  const [ordPlannerFileName, setOrdPlannerFileName] = useState<string>(ordMay14FileName);
+  const [ordPlannerReferenceScheduleId, setOrdPlannerReferenceScheduleId] = useState("");
+  const [ordPlannerOperationType, setOrdPlannerOperationType] = useState<OperationView>("mainline");
+  const [ordPlannerResult, setOrdPlannerResult] = useState<ScheduleResult | null>(null);
+  const [ordPlannerMaxStartTimes, setOrdPlannerMaxStartTimes] = useState(12);
   const planningVisibleFlights = useMemo(
     () => planningFlights.filter((flight) => flightMatchesSelectedSchedule(flight, planningAirport, planningDate)),
     [planningAirport, planningDate, planningFlights],
@@ -41,8 +49,14 @@ export default function App() {
     () => resourceGuideFlights.filter((flight) => flightMatchesSelectedSchedule(flight, resourceGuideAirport, resourceGuideDate)),
     [resourceGuideAirport, resourceGuideDate, resourceGuideFlights],
   );
+  const ordPlannerVisibleFlights = useMemo(
+    () => ordPlannerFlights.filter((flight) => flightMatchesSelectedSchedule(flight, ordPlannerAirport, ordPlannerDate)),
+    [ordPlannerAirport, ordPlannerDate, ordPlannerFlights],
+  );
   const activeSchedule = activeTab === "resource-guide"
     ? { airport: resourceGuideAirport, date: resourceGuideDate, flights: resourceGuideFlights, visibleFlights: resourceGuideVisibleFlights, fileName: resourceGuideFileName, referenceScheduleId: resourceGuideReferenceScheduleId }
+    : activeTab === "ord-planner"
+      ? { airport: ordPlannerAirport, date: ordPlannerDate, flights: ordPlannerFlights, visibleFlights: ordPlannerVisibleFlights, fileName: ordPlannerFileName, referenceScheduleId: ordPlannerReferenceScheduleId }
     : { airport: planningAirport, date: planningDate, flights: planningFlights, visibleFlights: planningVisibleFlights, fileName: planningFileName, referenceScheduleId: planningReferenceScheduleId };
 
   function handleScheduleImport(flights: FlightAssignment[], fileName: string, selectedDate?: string) {
@@ -56,6 +70,15 @@ export default function App() {
       setResourceGuideResult(null);
       if (firstImportedAirport) setResourceGuideAirport(firstImportedAirport);
       if (firstImportedDate) setResourceGuideDate(firstImportedDate);
+      return;
+    }
+    if (activeTab === "ord-planner") {
+      setOrdPlannerFlights(flights);
+      setOrdPlannerFileName(fileName);
+      setOrdPlannerReferenceScheduleId("");
+      setOrdPlannerResult(null);
+      setOrdPlannerAirport("ORD");
+      if (firstImportedDate) setOrdPlannerDate(firstImportedDate);
       return;
     }
 
@@ -77,6 +100,15 @@ export default function App() {
       setResourceGuideResult(null);
       return;
     }
+    if (activeTab === "ord-planner") {
+      setOrdPlannerFlights(ordMay14Flights);
+      setOrdPlannerFileName(ordMay14FileName);
+      setOrdPlannerReferenceScheduleId("");
+      setOrdPlannerAirport(ordMay14DefaultAirport);
+      setOrdPlannerDate(ordMay14DefaultDate);
+      setOrdPlannerResult(null);
+      return;
+    }
 
     setPlanningFlights(ordMay14Flights);
     setPlanningFileName(ordMay14FileName);
@@ -92,6 +124,11 @@ export default function App() {
       setResourceGuideResult(null);
       return;
     }
+    if (activeTab === "ord-planner") {
+      setOrdPlannerAirport(airport);
+      setOrdPlannerResult(null);
+      return;
+    }
 
     setPlanningAirport(airport);
     setPlanningResult(null);
@@ -105,6 +142,15 @@ export default function App() {
       setResourceGuideAirport(schedule.airport);
       setResourceGuideDate(schedule.date);
       setResourceGuideResult(null);
+      return;
+    }
+    if (activeTab === "ord-planner") {
+      setOrdPlannerFlights(schedule.flights);
+      setOrdPlannerFileName(schedule.fileName);
+      setOrdPlannerReferenceScheduleId(schedule.id);
+      setOrdPlannerAirport(schedule.airport);
+      setOrdPlannerDate(schedule.date);
+      setOrdPlannerResult(null);
       return;
     }
 
@@ -131,6 +177,16 @@ export default function App() {
     setResourceGuideResult(null);
   }
 
+  function handleOrdPlannerDateChange(date: string) {
+    setOrdPlannerDate(date);
+    setOrdPlannerResult(null);
+  }
+
+  function handleOrdPlannerMaxStartTimesChange(value: number) {
+    setOrdPlannerMaxStartTimes(value);
+    setOrdPlannerResult(null);
+  }
+
   function handleOperationTypeChange(operationType: OperationView) {
     setPlanningOperationType(operationType);
   }
@@ -139,6 +195,7 @@ export default function App() {
     setActiveRules(nextRules);
     setPlanningResult(null);
     setResourceGuideResult(null);
+    setOrdPlannerResult(null);
   }
 
   return (
@@ -209,6 +266,41 @@ export default function App() {
           onMaxAllowedStartTimesChange={handleResourceGuideMaxStartTimesChange}
           onOperationTypeChange={setResourceGuideOperationType}
           onResultChange={setResourceGuideResult}
+        />
+      )}
+      {activeTab === "ord-planner" && (
+        <PlanningToolPage
+          flights={ordPlannerVisibleFlights}
+          operationType={ordPlannerOperationType}
+          rules={activeRules}
+          result={ordPlannerResult}
+          selectedDate={ordPlannerDate}
+          title="ORD Planner"
+          description="Import the UA turns report for ORD to plan from outbound flight demand, aircraft type, strip requests, and planned inbound arrival time."
+          readyTitle="Ready to Build ORD Guidance"
+          readyDescription={`${ordPlannerVisibleFlights.length} ORD flights are loaded for ${ordPlannerDate}. Import the UA turns report, pick the date, then create guidance to use planned inbound arrivals as the earliest catering-ready time.`}
+          createButtonLabel="Create ORD Guidance"
+          assumptionTitle="UA Turns Logic"
+          assumptionDescription={`This ORD plan reads outbound flight, destination, and departure time from the UA turns report, uses the aircraft shown on the turn, and treats the inbound arrival time as the earliest aircraft-ready constraint. Rows with a strip value are planned as protected strip work. It then chooses up to ${ordPlannerMaxStartTimes} hour or half-hour start waves for driver, helper, and truck guidance.`}
+          resourcePlanPosition="above-timeline"
+          resourcePlanTitle="ORD Resource Guidance"
+          resourcePlanDescription="Recommended ORD driver, helper, and truck needs by start wave."
+          disallowCriticalPairings
+          preventUrgentPairings
+          showPairingQuality
+          showRiskDefinitions
+          timelineDriverLabelMode="sequential"
+          showTimelineDriverRadio={false}
+          exportButtonLabel="Export Excel"
+          maxAllowedStartTimes={ordPlannerMaxStartTimes}
+          onDateChange={handleOrdPlannerDateChange}
+          onExport={(payload) => exportResourceGuideWorkbook({
+            ...payload,
+            sourceFileName: ordPlannerFileName,
+          })}
+          onMaxAllowedStartTimesChange={handleOrdPlannerMaxStartTimesChange}
+          onOperationTypeChange={setOrdPlannerOperationType}
+          onResultChange={setOrdPlannerResult}
         />
       )}
       {activeTab === "dispatch" && (

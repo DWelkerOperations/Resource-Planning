@@ -2,7 +2,7 @@ import type { AirportCode, FlightAssignment, ServiceType } from "../types/dispat
 import { normalizeAirportCode } from "../data/airports";
 import { aircraftInterpretations, normalizeAircraftType } from "./aircraftMap";
 
-export type ScheduleFormatId = "standard" | "combined-flight" | "flight-overview" | "operation-plan";
+export type ScheduleFormatId = "standard" | "combined-flight" | "flight-overview" | "operation-plan" | "ua-turns";
 
 export type NormalizedScheduleRow = {
   sourceRowNumber: number;
@@ -13,6 +13,8 @@ export type NormalizedScheduleRow = {
   aircraftType: string;
   originSite: string;
   destination: string;
+  inboundArrivalTime?: string;
+  stripIdentifier?: string;
 };
 
 export type ScheduleImportResult = {
@@ -97,6 +99,23 @@ const formatDefinitions: FormatDefinition[] = [
         destination: cellText(row[headers.destination]),
       });
     },
+  },
+  {
+    id: "ua-turns",
+    label: "UA turns report",
+    match: (headers) => has(headers, "uaTurnsDate", "uaTurnsArrivalTime", "uaTurnsStrip", "uaTurnsAircraft", "uaTurnsStation", "uaTurnsFlight", "uaTurnsDestination", "uaTurnsDepartureTime"),
+    read: (row, sourceRowNumber, headers) => normalizeSourceRow({
+      sourceRowNumber,
+      departureDate: cellText(row[headers.uaTurnsDate]),
+      airline: "UA",
+      flightNumber: cellText(row[headers.uaTurnsFlight]),
+      departureTime: cellText(row[headers.uaTurnsDepartureTime]),
+      aircraftType: cellText(row[headers.uaTurnsAircraft]),
+      originSite: cellText(row[headers.uaTurnsStation]),
+      destination: cellText(row[headers.uaTurnsDestination]),
+      inboundArrivalTime: cellText(row[headers.uaTurnsArrivalTime]),
+      stripIdentifier: cellText(row[headers.uaTurnsStrip]),
+    }),
   },
   {
     id: "operation-plan",
@@ -253,6 +272,26 @@ function buildHeaderIndex(headerRow: unknown[]) {
     headers.flightOverviewDate = 0;
     headers.flightOverviewDepartureTime = 2;
   }
+  if (
+    normalizedHeaders[0] === "arrv date"
+    && normalizedHeaders[1] === "flight"
+    && normalizedHeaders[3] === "arrives"
+    && normalizedHeaders[5] === "term"
+    && normalizedHeaders[6] === "a/c"
+    && normalizedHeaders[7] === "station"
+    && normalizedHeaders[8] === "flight"
+    && normalizedHeaders[9] === "to"
+    && normalizedHeaders[10] === "departs"
+  ) {
+    headers.uaTurnsDate = 0;
+    headers.uaTurnsArrivalTime = 3;
+    headers.uaTurnsStrip = 5;
+    headers.uaTurnsAircraft = 6;
+    headers.uaTurnsStation = 7;
+    headers.uaTurnsFlight = 8;
+    headers.uaTurnsDestination = 9;
+    headers.uaTurnsDepartureTime = 10;
+  }
 
   return headers;
 }
@@ -261,6 +300,8 @@ function normalizeSourceRow(row: NormalizedScheduleRow): NormalizedScheduleRow {
   const originSite = normalizeAirport(row.originSite) ?? row.originSite.trim().toUpperCase();
   const aircraftType = normalizeAircraftType(row.aircraftType);
   const unsupportedAircraft = row.aircraftType && !isSupportedAircraft(row.aircraftType);
+  const inboundArrivalTime = row.inboundArrivalTime ? normalizeTime(row.inboundArrivalTime) : "";
+  const stripIdentifier = row.stripIdentifier?.trim() ?? "";
 
   return {
     sourceRowNumber: row.sourceRowNumber,
@@ -271,6 +312,8 @@ function normalizeSourceRow(row: NormalizedScheduleRow): NormalizedScheduleRow {
     aircraftType: unsupportedAircraft ? "Unknown" : aircraftType || "Unknown",
     originSite,
     destination: row.destination.trim().toUpperCase(),
+    ...(inboundArrivalTime ? { inboundArrivalTime } : {}),
+    ...(stripIdentifier ? { stripIdentifier } : {}),
   };
 }
 
@@ -291,9 +334,11 @@ function validateNormalizedRow(row: NormalizedScheduleRow) {
 }
 
 function toFlightAssignment(row: NormalizedScheduleRow, index: number): FlightAssignment {
-  const serviceType: ServiceType = row.airline.toUpperCase() === "UA" ? "load-ua" : "load-other";
+  const serviceType: ServiceType = row.stripIdentifier ? "intl-strip" : row.airline.toUpperCase() === "UA" ? "load-ua" : "load-other";
   const start = addMinutes(row.departureTime, -85);
   const end = addMinutes(row.departureTime, -35);
+  const inboundNote = row.inboundArrivalTime ? ` Planned inbound arrival ${row.inboundArrivalTime}.` : "";
+  const stripNote = row.stripIdentifier ? ` Strip: ${row.stripIdentifier}.` : "";
 
   return {
     id: `import-${index + 1}`,
@@ -305,12 +350,12 @@ function toFlightAssignment(row: NormalizedScheduleRow, index: number): FlightAs
     end,
     etd: row.departureTime,
     eta: "-",
-    inboundEta: "-",
+    inboundEta: row.inboundArrivalTime || "-",
     aircraft: row.aircraftType,
     serviceType,
     originAirport: normalizeAirport(row.originSite),
     destinationAirport: row.destination,
-    notes: `Imported ${row.departureDate}. From ${row.originSite} to ${row.destination}.`,
+    notes: `Imported ${row.departureDate}. From ${row.originSite} to ${row.destination}.${inboundNote}${stripNote}`,
   };
 }
 
@@ -362,6 +407,14 @@ function normalizeDate(value: string) {
   if (isoDate) {
     const [, year, month, day] = isoDate;
     return validDateParts(year, month, day) ? `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}` : "";
+  }
+
+  const monthNameDate = date.match(/^(\d{1,2})-([A-Za-z]{3,})-(\d{2}|\d{4})$/);
+  if (monthNameDate) {
+    const [, day, monthName, rawYear] = monthNameDate;
+    const month = monthNumber(monthName);
+    const year = rawYear.length === 2 ? `20${rawYear}` : rawYear;
+    return month && validDateParts(year, month, day) ? `${year}-${month}-${day.padStart(2, "0")}` : "";
   }
 
   return "";
@@ -429,6 +482,11 @@ function validDateParts(year: string, month: string, day: string) {
   const normalized = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
   const parsed = new Date(`${normalized}T00:00:00`);
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().startsWith(normalized);
+}
+
+function monthNumber(value: string) {
+  const month = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].indexOf(value.slice(0, 3).toLowerCase()) + 1;
+  return month > 0 ? String(month).padStart(2, "0") : "";
 }
 
 function has(headers: HeaderIndex, ...keys: string[]) {

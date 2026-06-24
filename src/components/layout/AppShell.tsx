@@ -15,7 +15,7 @@ type AppShellProps = {
   onAirportChange: (airport: AirportCode) => void;
   onReferenceScheduleLoad: (schedule: ReferenceSchedule) => void;
   onScheduleClear: () => void;
-  onScheduleImport: (flights: FlightAssignment[], fileName: string) => void;
+  onScheduleImport: (flights: FlightAssignment[], fileName: string, selectedDate?: string) => void;
   children: React.ReactNode;
 };
 

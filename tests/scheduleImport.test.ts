@@ -58,6 +58,30 @@ describe("schedule import normalization", () => {
     assert.equal(result.flights.filter((flight) => flight.originAirport === "ORD" && flight.departureDate === "2026-06-02").length, 1);
   });
 
+  it("normalizes UA turns reports using outbound turns and planned inbound arrival", () => {
+    const result = parseScheduleRows([
+      ["", "", "", "", "", "TURNS REPORT", "", "", "", "", "", ""],
+      ["Inbound Flight Information", "", "", "", "GROUND", "", "", "", "Outbound Flight Info", "", "", ""],
+      ["Arrv Date", "FLIGHT", "FROM", "ARRIVES", "TIME", "TERM", "A/C", "STATION", "FLIGHT", "TO", "DEPARTS", ""],
+      ["1-Jun-26", "2465", "BNA", "9:38", "0:57", "", "73G", "ORD", "365", "CVG", "10:35", ""],
+      ["1-Jun-26", "546", "EWR", "22:07", "1:07", "Strip", "37K", "ORD", "9063", "ORD", "23:14", ""],
+    ]);
+
+    assert.equal(result.detectedFormat, "ua-turns");
+    assert.deepEqual(result.availableDates, ["2026-06-01"]);
+    assert.equal(result.normalizedRows.length, 2);
+    assert.equal(result.normalizedRows[0]?.flightNumber, "365");
+    assert.equal(result.normalizedRows[0]?.departureTime, "10:35");
+    assert.equal(result.normalizedRows[0]?.inboundArrivalTime, "09:38");
+    assert.equal(result.flights[0]?.flightNumber, "UA365");
+    assert.equal(result.flights[0]?.originAirport, "ORD");
+    assert.equal(result.flights[0]?.destinationAirport, "CVG");
+    assert.equal(result.flights[0]?.inboundEta, "09:38");
+    assert.equal(result.flights[0]?.serviceType, "load-ua");
+    assert.equal(result.flights[1]?.serviceType, "intl-strip");
+    assert.match(result.flights[1]?.notes ?? "", /Strip: Strip/);
+  });
+
   it("treats first Depart as date and second Depart as time in flight overview exports", () => {
     const result = parseScheduleRows([
       ["Depart", "Flight", "Depart", "Ramp", "Kitchen", "Aircraft ", "From ", "To", "Hen "],

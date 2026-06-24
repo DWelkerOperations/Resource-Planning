@@ -1,6 +1,7 @@
 export type AppTab =
   | "planning"
   | "resource-guide"
+  | "ord-planner"
   | "dispatch"
   | "staffing"
   | "fleet"
