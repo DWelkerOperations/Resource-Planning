@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - v1.1Beta
   workflow_dispatch:
 
 permissions:
@@ -19,8 +20,27 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout stable
         uses: actions/checkout@v4
+        with:
+          ref: main
+          path: stable
+
+      - name: Check for beta branch
+        id: beta
+        run: |
+          if git ls-remote --exit-code --heads https://github.com/${{ github.repository }}.git v1.1Beta >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout beta
+        if: steps.beta.outputs.exists == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: v1.1Beta
+          path: beta
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -32,20 +52,57 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+          cache-dependency-path: stable/pnpm-lock.yaml
 
-      - name: Install dependencies
+      - name: Install stable dependencies
+        working-directory: stable
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck
+      - name: Typecheck stable
+        working-directory: stable
         run: pnpm typecheck
 
-      - name: Test
+      - name: Test stable
+        working-directory: stable
         run: pnpm test
 
-      - name: Build
+      - name: Build stable
+        working-directory: stable
         run: pnpm build
         env:
           GITHUB_PAGES: "true"
+
+      - name: Install beta dependencies
+        if: steps.beta.outputs.exists == 'true'
+        working-directory: beta
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck beta
+        if: steps.beta.outputs.exists == 'true'
+        working-directory: beta
+        run: pnpm typecheck
+
+      - name: Test beta
+        if: steps.beta.outputs.exists == 'true'
+        working-directory: beta
+        run: pnpm test
+
+      - name: Build beta
+        if: steps.beta.outputs.exists == 'true'
+        working-directory: beta
+        run: pnpm build
+        env:
+          GITHUB_PAGES: "true"
+          APP_BASE_PATH: "/Dispatch-Tool/v1.1Beta/"
+
+      - name: Assemble Pages artifact
+        run: |
+          mkdir -p public-site
+          cp -R stable/dist/. public-site/
+          if [ "${{ steps.beta.outputs.exists }}" = "true" ]; then
+            mkdir -p public-site/v1.1Beta
+            cp -R beta/dist/. public-site/v1.1Beta/
+          fi
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -55,7 +112,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: public-site
 
   deploy:
     environment:

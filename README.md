@@ -54,11 +54,18 @@ Expected public URL after Pages is enabled:
 https://dwelker123-glitch.github.io/Dispatch-Tool/
 ```
 
+Expected beta URL when the `v1.1Beta` branch exists:
+
+```text
+https://dwelker123-glitch.github.io/Dispatch-Tool/v1.1Beta/
+```
+
 Deployment behavior:
 
 - Viewers do not need a GitHub account or GitHub login.
-- The shared page updates only after code is committed and pushed to `main`.
-- The GitHub Actions workflow installs dependencies, runs typecheck/tests, builds the app with the `/Dispatch-Tool/` base path, and publishes the `dist` artifact to Pages.
+- The stable shared page updates only after code is committed and pushed to `main`.
+- The beta page updates after code is committed and pushed to `v1.1Beta`.
+- The GitHub Actions workflow installs dependencies, runs checks, builds stable with the `/Dispatch-Tool/` base path, builds beta with the `/Dispatch-Tool/v1.1Beta/` base path when the beta branch exists, and publishes both into one Pages artifact.
 - Use `workflow_dispatch` from GitHub Actions if a manual redeploy of the current `main` commit is needed.
 
 One-time GitHub repository setup:

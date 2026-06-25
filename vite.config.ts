@@ -20,7 +20,7 @@ function readCommitHash() {
 }
 
 export default defineConfig({
-  base: process.env.GITHUB_PAGES === "true" ? "/Dispatch-Tool/" : "/",
+  base: process.env.APP_BASE_PATH ?? (process.env.GITHUB_PAGES === "true" ? "/Dispatch-Tool/" : "/"),
   plugins: [react()],
   cacheDir: "/private/tmp/dispatch-tool-vite-cache",
   define: {
