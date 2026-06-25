@@ -175,6 +175,8 @@ function PushServiceTask({
 
     const target = manualDropTargetFromPoint(clientX, clientY, event.flightId, push.id);
     if (!target) return;
+    const manualWindow = window as typeof window & { __manualFlightDropHandled?: { flightId: string; handledAt: number } };
+    manualWindow.__manualFlightDropHandled = { flightId: event.flightId, handledAt: Date.now() };
     onManualFlightDrop({ flightId: event.flightId, targetPushId: target.pushId, targetSequence: target.sequence });
   }
 
@@ -199,6 +201,12 @@ function PushServiceTask({
     window.addEventListener("mouseup", handleWindowMouseUp, { once: true, capture: true });
   }
 
+  function handlePointerDownCapture(pointerEvent: ReactPointerEvent<HTMLButtonElement>) {
+    pointerStartRef.current = { x: pointerEvent.clientX, y: pointerEvent.clientY };
+    if (!manualControlActive || !onManualFlightDrop) return;
+    window.addEventListener("pointerup", handleWindowPointerUp, { once: true, capture: true });
+  }
+
   return (
     <button
       ref={setTaskNodeRef}
@@ -208,9 +216,10 @@ function PushServiceTask({
       data-push-task-flight-id={event.flightId}
       data-push-task-sequence={sequence}
       data-push-task-service-type={event.serviceType}
+      onPointerDownCapture={handlePointerDownCapture}
       onPointerDown={handlePointerDown}
       onMouseDown={handleMouseDown}
-      className={`group/event absolute top-1 z-40 flex h-5 cursor-grab items-center justify-center gap-1 rounded-md border px-1 text-[10px] font-semibold shadow-sm transition active:cursor-grabbing hover:z-[950] ${serviceStyle(event.serviceType)} ${eventRiskTone} ${event.modifiedByManualControl ? "ring-2 ring-blue-600 ring-offset-1" : ""} ${isOver ? "outline outline-2 outline-emerald-500 outline-offset-1" : ""} ${isDragging ? "z-[1000] opacity-75 shadow-lg" : ""}`}
+      className={`group/event absolute top-1 flex h-5 cursor-grab items-center justify-center gap-1 rounded-md border px-1 text-[10px] font-semibold shadow-sm transition active:cursor-grabbing hover:z-[1050] ${manualControlActive ? "z-[1000]" : "z-40"} ${serviceStyle(event.serviceType)} ${eventRiskTone} ${event.modifiedByManualControl ? "ring-2 ring-blue-600 ring-offset-1" : ""} ${isOver ? "outline outline-2 outline-emerald-500 outline-offset-1" : ""} ${isDragging ? "z-[1100] opacity-75 shadow-lg" : ""}`}
       style={{
         left: eventLeft,
         width: eventWidth,

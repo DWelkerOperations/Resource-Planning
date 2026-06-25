@@ -54,6 +54,10 @@ export function DispatcherTimeline({
     }
 
     if (manualControlActive && activeData?.kind === "push-service-task") {
+      const manualWindow = window as typeof window & { __manualFlightDropHandled?: { flightId: string; handledAt: number } };
+      const handledDrop = manualWindow.__manualFlightDropHandled;
+      if (handledDrop?.flightId === String(activeData.flightId) && Date.now() - handledDrop.handledAt < 1000) return;
+
       const pointDropData = manualDropDataFromPoint(event, String(activeData.flightId), String(activeData.pushId));
       const manualDropData = pointDropData ?? (overData?.kind === "manual-push-drop" ? overData : null);
       if (!manualDropData) return;
@@ -166,6 +170,19 @@ function manualDropDataFromPoint(event: DragEndEvent, activeFlightId: string, ac
       return {
         kind: "manual-push-drop",
         pushId: pushElement.dataset.manualPushId,
+        sequence: Number(pushElement.dataset.manualPushSequence ?? 0),
+      };
+    }
+  }
+
+  for (const pushElement of document.querySelectorAll<HTMLElement>("[data-manual-push-id]")) {
+    if (pushElement.dataset.manualPushId === activePushId) continue;
+    const pushRect = pushElement.getBoundingClientRect();
+    const isInsidePush = centerX >= pushRect.left && centerX <= pushRect.right && centerY >= pushRect.top && centerY <= pushRect.bottom;
+    if (isInsidePush) {
+      return {
+        kind: "manual-push-drop",
+        pushId: pushElement.dataset.manualPushId ?? "",
         sequence: Number(pushElement.dataset.manualPushSequence ?? 0),
       };
     }
