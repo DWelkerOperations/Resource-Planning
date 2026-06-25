@@ -58,8 +58,9 @@ export function DispatcherTimeline({
       const handledDrop = manualWindow.__manualFlightDropHandled;
       if (handledDrop?.flightId === String(activeData.flightId) && Date.now() - handledDrop.handledAt < 1000) return;
 
+      const rectDropData = manualDropDataFromDraggedRect(event, String(activeData.pushId));
       const pointDropData = manualDropDataFromPoint(event, String(activeData.flightId), String(activeData.pushId));
-      const manualDropData = pointDropData ?? (overData?.kind === "manual-push-drop" ? overData : null);
+      const manualDropData = rectDropData ?? pointDropData ?? (overData?.kind === "manual-push-drop" ? overData : null);
       if (!manualDropData) return;
       if (String(manualDropData.pushId) === String(activeData.pushId)) return;
       onFlightMove?.({
@@ -142,6 +143,41 @@ export function DispatcherTimeline({
       </TimelineScaleContext.Provider>
     </DndContext>
   );
+}
+
+function manualDropDataFromDraggedRect(event: DragEndEvent, activePushId: string) {
+  const rect = event.active.rect.current.initial;
+  if (!rect) return null;
+
+  const draggedRect = {
+    left: rect.left + event.delta.x,
+    right: rect.left + event.delta.x + rect.width,
+    top: rect.top + event.delta.y,
+    bottom: rect.top + event.delta.y + rect.height,
+  };
+
+  let bestTarget: { pushId: string; sequence: number; overlapArea: number } | null = null;
+  for (const pushElement of document.querySelectorAll<HTMLElement>("[data-manual-push-id]")) {
+    if (pushElement.dataset.manualPushId === activePushId) continue;
+    const pushRect = pushElement.getBoundingClientRect();
+    const overlapWidth = Math.max(0, Math.min(draggedRect.right, pushRect.right) - Math.max(draggedRect.left, pushRect.left));
+    const overlapHeight = Math.max(0, Math.min(draggedRect.bottom, pushRect.bottom) - Math.max(draggedRect.top, pushRect.top));
+    const overlapArea = overlapWidth * overlapHeight;
+    if (overlapArea > 0 && (!bestTarget || overlapArea > bestTarget.overlapArea)) {
+      bestTarget = {
+        pushId: pushElement.dataset.manualPushId ?? "",
+        sequence: Number(pushElement.dataset.manualPushSequence ?? 0),
+        overlapArea,
+      };
+    }
+  }
+
+  if (!bestTarget) return null;
+  return {
+    kind: "manual-push-drop",
+    pushId: bestTarget.pushId,
+    sequence: bestTarget.sequence,
+  };
 }
 
 function manualDropDataFromPoint(event: DragEndEvent, activeFlightId: string, activePushId: string) {
