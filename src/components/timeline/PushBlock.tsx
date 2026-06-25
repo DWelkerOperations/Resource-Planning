@@ -173,7 +173,7 @@ function PushServiceTask({
     setDropRef(node);
   };
   const eventLeft = (timeToMinutes(event.serviceStart) - pushStartMinutes) * minuteWidth;
-  const eventWidth = Math.max(30, event.serviceDurationMinutes * minuteWidth);
+  const eventWidth = Math.max(manualControlActive ? 72 : 30, event.serviceDurationMinutes * minuteWidth);
   const eventRiskTone = eventRiskRing[event.riskSeverity];
   const sequence = event.currentSequence ?? push.serviceEvents.findIndex((item) => item.flightId === event.flightId);
 
@@ -250,6 +250,7 @@ function PushServiceTask({
         data-push-task-flight-id={event.flightId}
         data-push-task-sequence={sequence}
         data-push-task-service-type={event.serviceType}
+        title={manualControlActive ? `Drag ${event.flightNumber} to another push` : `${event.flightNumber} ${serviceLabels[event.serviceType]}`}
         onPointerDown={handleManualPointerDown}
         onPointerMove={handleManualPointerMove}
         onPointerUp={handleManualPointerUp}
@@ -265,7 +266,9 @@ function PushServiceTask({
           transform: CSS.Translate.toString(transform),
         }}
       >
-        <GripVertical size={10} className="shrink-0 opacity-60" />
+        <span className="flex h-full w-4 shrink-0 items-center justify-center rounded bg-white/60">
+          <GripVertical size={12} className="opacity-70" />
+        </span>
         <span className="truncate">{event.flightNumber} {event.gate}</span>
         {event.modifiedByManualControl && <span className="ml-0.5 rounded bg-white/80 px-0.5 text-[8px] uppercase text-blue-800">M</span>}
         <div className="pointer-events-none absolute left-0 top-7 z-[999] hidden w-72 rounded-xl border border-slate-200 bg-white p-3 text-left text-xs font-normal text-slate-600 shadow-xl group-hover/event:block">

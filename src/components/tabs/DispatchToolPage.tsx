@@ -4,6 +4,7 @@ import { mockFlights } from "../../data/mockFlights";
 import { mockHelpers, mockTrucks } from "../../data/mockResources";
 import { ordCdlDriversForDate } from "../../data/ordCdlDrivers";
 import { planningRules } from "../../data/planningRules";
+import { createManualPlanState, moveFlightToPush, movePushByMinutes } from "../../engine/manualControl";
 import { createDispatchSchedule, filterScheduleResultByOperation } from "../../engine/scheduler";
 import type { Driver, FlightAssignment, Helper, OperationView, PlanningRules, Push, ResourceInputs, ScheduleResult } from "../../types/dispatch";
 import { applyFlightTaskTypeChange, type FlightTaskTypeChange } from "../../utils/taskTypeUpdates";
@@ -85,6 +86,25 @@ export function DispatchToolPage({ flights = mockFlights, planningOperationType,
     setLoadedPlan((currentPlan) => currentPlan ? applyFlightTaskTypeChange(currentPlan, change) : currentPlan);
   }
 
+  function updateActiveDispatchResult(update: (currentResult: ScheduleResult) => ScheduleResult) {
+    if (dispatchResult) {
+      setDispatchResult(update(dispatchResult));
+      return;
+    }
+    if (loadedPlan) {
+      setLoadedPlan(update(loadedPlan));
+    }
+  }
+
+  function handlePushTimeChange(change: { pushId: string; deltaMinutes: number }) {
+    if (change.deltaMinutes === 0) return;
+    updateActiveDispatchResult((currentResult) => movePushByMinutes(createManualPlanState(currentResult), change.pushId, change.deltaMinutes, rules).result);
+  }
+
+  function handleFlightMove(change: { flightId: string; targetPushId: string; targetSequence: number }) {
+    updateActiveDispatchResult((currentResult) => moveFlightToPush(createManualPlanState(currentResult), change.flightId, change.targetPushId, change.targetSequence, rules).result);
+  }
+
   return (
     <div className="space-y-5">
       <div>
@@ -110,7 +130,15 @@ export function DispatchToolPage({ flights = mockFlights, planningOperationType,
       {result ? (
         <>
           <ScheduleSummaryCards result={result} />
-          <DispatcherTimeline flights={[]} drivers={timelineDrivers} pushes={result.pushes} onTaskTypeChange={handleTimelineTaskTypeChange} />
+          <DispatcherTimeline
+            flights={[]}
+            drivers={timelineDrivers}
+            pushes={result.pushes}
+            onTaskTypeChange={handleTimelineTaskTypeChange}
+            manualControlActive
+            onPushTimeChange={handlePushTimeChange}
+            onFlightMove={handleFlightMove}
+          />
         </>
       ) : (
         <Panel className="p-6">
