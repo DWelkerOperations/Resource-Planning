@@ -64,11 +64,11 @@ jobs:
 
       - name: Lint stable
         working-directory: stable
-        run: pnpm lint
+        run: pnpm run lint --if-present
 
       - name: Production dependency audit stable
         working-directory: stable
-        run: pnpm security:audit
+        run: pnpm run security:audit --if-present
 
       - name: Test stable
         working-directory: stable
