@@ -39,7 +39,7 @@ Dispatch Tool v1.0 is the stable generic dispatch/resource planner prototype bas
 
 ## Local development
 
-Requires Node.js 20+ and pnpm. The GitHub Pages workflow currently runs Node 24 and pnpm 11.7.0.
+Requires Node.js 20+ and pnpm. The GitHub Pages workflow currently runs Node 20 and pnpm 9.
 
 ```bash
 pnpm install
@@ -119,7 +119,7 @@ This is lightweight safety friction only. It is not security, authentication, au
 
 The browser importer accepts `.xlsx` and `.xls` workbooks up to 8 MB, rejects empty files, rejects unrecognized MIME types when provided by the browser, rejects workbooks with more than 20 sheets, and rejects parsed schedules with more than 25,000 rows. These guardrails reduce accidental browser crashes and adversarial file risk, but they do not make untrusted workbook parsing safe.
 
-The production dependency audit is configured in `pnpm-workspace.yaml` to ignore the two known `xlsx@0.18.5` advisories while this parser replacement remains open; new high-severity production advisories should still fail `pnpm security:audit`.
+The production dependency audit script ignores the two known `xlsx@0.18.5` advisories while this parser replacement remains open; new high-severity production advisories should still fail `pnpm security:audit`.
 
 ## Data and secrets warning
 
