@@ -39,7 +39,7 @@ Dispatch Tool v1.0 is the stable generic dispatch/resource planner prototype bas
 
 ## Local development
 
-Requires Node.js 20+ and pnpm. The GitHub Pages workflow currently runs Node 20 and pnpm 11.7.0.
+Requires Node.js 20+ and pnpm. The GitHub Pages workflow currently runs Node 24 and pnpm 11.7.0.
 
 ```bash
 pnpm install
