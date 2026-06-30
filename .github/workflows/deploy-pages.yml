@@ -64,11 +64,21 @@ jobs:
 
       - name: Lint stable
         working-directory: stable
-        run: pnpm run lint --if-present
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.lint ? 0 : 1)"; then
+            pnpm lint
+          else
+            echo "No stable lint script; skipping."
+          fi
 
       - name: Production dependency audit stable
         working-directory: stable
-        run: pnpm run security:audit --if-present
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.['security:audit'] ? 0 : 1)"; then
+            pnpm security:audit
+          else
+            echo "No stable security:audit script; skipping."
+          fi
 
       - name: Test stable
         working-directory: stable
