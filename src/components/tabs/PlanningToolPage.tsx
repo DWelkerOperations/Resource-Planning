@@ -217,9 +217,10 @@ export function PlanningToolPage({
     onFlightTaskTypeChange?.(change);
   }
 
-  const timelineDrivers = visibleResult ? driversUsedByPlan(planningResources.drivers, visibleResult.pushes) : planningResources.drivers.slice(0, 12);
+  const rawTimelineDrivers = visibleResult ? driversUsedByPlan(planningResources.drivers, visibleResult.pushes) : planningResources.drivers.slice(0, 12);
+  const timelineDrivers = visibleResult ? limitDriverDisplayStartWaves(rawTimelineDrivers, visibleResult.pushes, maxAllowedStartTimes, runRules) : rawTimelineDrivers;
   const startWaves = visibleResult
-    ? createStartWaves(visibleResult.pushes, planningResources.drivers)
+    ? createStartWaves(visibleResult.pushes, timelineDrivers)
     : [];
 
   return (
@@ -885,6 +886,39 @@ function createStartWaves(pushes: Push[], drivers: Driver[]): StartWave[] {
 
   return [...buckets.values()]
     .sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+}
+
+function limitDriverDisplayStartWaves(drivers: Driver[], pushes: Push[], maxAllowedStartTimes: number, rules: PlanningRules) {
+  const startTimeLimit = Math.max(minShiftBidStartTimes, Math.min(maxShiftBidStartTimes, maxAllowedStartTimes));
+  const waves = createStartWaves(pushes, drivers).map((wave) => ({ ...wave, minutes: timeToMinutes(wave.startTime) }));
+  if (waves.length <= startTimeLimit) return drivers;
+
+  const startAliases = new Map(waves.map((wave) => [wave.startTime, wave.startTime]));
+
+  while (waves.length > startTimeLimit) {
+    const mergeIndex = lowestVolumeMergeableWaveIndex(waves);
+    const removedWave = waves[mergeIndex];
+    const neighborIndex = nearestWaveIndex(waves, mergeIndex);
+    const targetWave = waves[neighborIndex];
+
+    for (const [startTime, alias] of startAliases.entries()) {
+      if (alias === removedWave.startTime) startAliases.set(startTime, targetWave.startTime);
+    }
+    startAliases.set(removedWave.startTime, targetWave.startTime);
+    targetWave.driverStarts += removedWave.driverStarts;
+    waves.splice(mergeIndex, 1);
+  }
+
+  const shiftSpanMinutes = rules.standardShiftHours * 60 + rules.lunchMinutes;
+  return drivers.map((driver) => {
+    const currentDisplayStart = driver.displayShiftStart ?? driver.shiftStart;
+    const displayShiftStart = startAliases.get(currentDisplayStart) ?? currentDisplayStart;
+    return {
+      ...driver,
+      displayShiftStart,
+      displayShiftEnd: addMinutes(displayShiftStart, shiftSpanMinutes),
+    };
+  });
 }
 
 function driverForResourceId(driverId: string, drivers: Driver[]): Driver {
