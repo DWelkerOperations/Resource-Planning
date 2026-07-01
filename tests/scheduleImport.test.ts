@@ -160,6 +160,17 @@ describe("schedule import normalization", () => {
     assert.doesNotThrow(() => validateScheduleFileMetadata({ name: "large-tripmaster.xlsx", size: 32 * 1024 * 1024, type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
   });
 
+  it("allows large monthly turns workbooks", () => {
+    const rows: unknown[][] = Array.from({ length: 86501 }, () => []);
+    rows[0] = ["Date", "Airline", "Flight Number", "Departure Time", "Aircraft", "Origin Site", "Destination"];
+    rows[1] = ["2026-06-01", "UA", "100", "08:00", "737", "ORD", "DEN"];
+
+    const result = parseScheduleRows(rows);
+
+    assert.equal(result.normalizedRows.length, 1);
+    assert.equal(result.skippedRowCount, 0);
+  });
+
   it("rejects schedules with too many rows", () => {
     assert.throws(
       () => parseScheduleRows(Array.from({ length: maxScheduleRows + 1 }, () => [])),

@@ -27,7 +27,7 @@ export type ScheduleImportResult = {
 };
 
 export const maxScheduleFileBytes = 64 * 1024 * 1024;
-export const maxScheduleRows = 25000;
+export const maxScheduleRows = 150000;
 
 type HeaderIndex = Record<string, number>;
 type FormatDefinition = {
@@ -258,7 +258,10 @@ export function parseScheduleRows(rows: unknown[][]): ScheduleImportResult {
   let skippedRowCount = 0;
 
   for (let index = detected.headerRowIndex + 1; index < rows.length; index += 1) {
-    const row = detected.definition.read(rows[index] ?? [], index + 1, detected.headers);
+    const sourceRow = rows[index] ?? [];
+    if (sourceRow.every((cell) => !cellText(cell))) continue;
+
+    const row = detected.definition.read(sourceRow, index + 1, detected.headers);
     if (!isNonEmptyScheduleRow(row)) continue;
 
     const rowWarnings = validateNormalizedRow(row);
