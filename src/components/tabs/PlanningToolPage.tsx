@@ -219,7 +219,7 @@ export function PlanningToolPage({
 
   const timelineDrivers = visibleResult ? driversUsedByPlan(planningResources.drivers, visibleResult.pushes) : planningResources.drivers.slice(0, 12);
   const startWaves = visibleResult
-    ? limitStartWaves(createStartWaves(visibleResult.pushes, planningResources.drivers), maxAllowedStartTimes)
+    ? createStartWaves(visibleResult.pushes, planningResources.drivers)
     : [];
 
   return (
@@ -885,22 +885,6 @@ function createStartWaves(pushes: Push[], drivers: Driver[]): StartWave[] {
 
   return [...buckets.values()]
     .sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
-}
-
-function limitStartWaves(startWaves: StartWave[], maxAllowedStartTimes: number) {
-  const startTimeLimit = Math.max(minShiftBidStartTimes, Math.min(maxShiftBidStartTimes, maxAllowedStartTimes));
-  const waves = startWaves.map((wave) => ({ ...wave, minutes: timeToMinutes(wave.startTime) }));
-
-  while (waves.length > startTimeLimit) {
-    const mergeIndex = lowestVolumeMergeableWaveIndex(waves);
-    const neighborIndex = nearestWaveIndex(waves, mergeIndex);
-    waves[neighborIndex].driverStarts += waves[mergeIndex].driverStarts;
-    waves.splice(mergeIndex, 1);
-  }
-
-  return waves
-    .sort((a, b) => a.minutes - b.minutes)
-    .map(({ minutes: _minutes, ...wave }) => wave);
 }
 
 function driverForResourceId(driverId: string, drivers: Driver[]): Driver {
