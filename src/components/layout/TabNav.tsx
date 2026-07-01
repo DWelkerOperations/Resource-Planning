@@ -2,14 +2,6 @@ import type { AppTab } from "../../types/dispatch";
 
 const tabs: { id: AppTab; label: string }[] = [
   { id: "resource-guide", label: "Resource Guide" },
-  { id: "ord-planner", label: "ORD Planner" },
-  { id: "planning", label: "Planning Tool" },
-  { id: "dispatch", label: "Dispatch" },
-  { id: "staffing", label: "Staffing" },
-  { id: "fleet", label: "Fleet" },
-  { id: "exceptions", label: "Exceptions" },
-  { id: "tour-sheet", label: "Tour Sheet" },
-  { id: "dashboard", label: "Dashboard" },
   { id: "thumb-rules", label: "Thumb Rules" },
 ];
 
