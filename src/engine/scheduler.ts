@@ -834,8 +834,8 @@ function assignResourcesToPush(push: Push, driverPool: ResourcePoolItem[], helpe
   const truckCount = requiredTruckCount(push);
   const trucks = bestTrucksForPush(truckPool, originalResourceStart, truckCount, push);
   let drivers = bestShiftResources(driverPool, originalResourceStart, originalDriverTruckRelease, truckCount, rules, allowShiftOverflow, push);
-  const helperNeeded = helpersRequiredForPush(push, trucks, rules);
-  let helpers = helperNeeded ? bestShiftResources(helperPool, originalResourceStart, originalReturn, truckCount, rules, allowShiftOverflow, push) : [];
+  const helperNeeded = helpersRequiredForPush(push, rules);
+  let helpers = helperNeeded ? bestShiftResources(helperPool, originalResourceStart, originalDriverTruckRelease, truckCount, rules, allowShiftOverflow, push) : [];
   const assignedPush = { ...push, exceptionFlags: [...push.exceptionFlags] };
 
   const latestDriverReadyTime = drivers.length > 0 ? Math.max(...drivers.map((driver) => driver.availableAt)) : originalResourceStart;
@@ -848,13 +848,12 @@ function assignResourcesToPush(push: Push, driverPool: ResourcePoolItem[], helpe
   if (delay > 0) shiftPush(assignedPush, delay);
 
   const assignedResourceStart = timeToMinutes(assignedPush.loadStartTime);
-  const assignedReturn = timeToMinutes(assignedPush.returnTime);
   const assignedDriverTruckRelease = resourceReleaseTimeForPush(assignedPush);
   if (!crewSelectionPreservesLunch(drivers, assignedResourceStart, assignedDriverTruckRelease, rules, assignedPush)) {
     drivers = bestShiftResources(driverPool, assignedResourceStart, assignedDriverTruckRelease, truckCount, rules, allowShiftOverflow, assignedPush);
   }
-  if (helperNeeded && !crewSelectionPreservesLunch(helpers, assignedResourceStart, assignedReturn, rules, assignedPush)) {
-    helpers = bestShiftResources(helperPool, assignedResourceStart, assignedReturn, truckCount, rules, allowShiftOverflow, assignedPush);
+  if (helperNeeded && !crewSelectionPreservesLunch(helpers, assignedResourceStart, assignedDriverTruckRelease, rules, assignedPush)) {
+    helpers = bestShiftResources(helperPool, assignedResourceStart, assignedDriverTruckRelease, truckCount, rules, allowShiftOverflow, assignedPush);
   }
 
   if (drivers.length < truckCount) markException(assignedPush, exceptions, "Driver coverage short", "driver-shortage", "Add one driver for each truck assigned to this push.");
@@ -876,7 +875,7 @@ function assignResourcesToPush(push: Push, driverPool: ResourcePoolItem[], helpe
 
   if (drivers.length >= truckCount) assignCrewPoolItems(drivers, assignedResourceStart, assignedDriverTruckRelease, assignedPush, "driverId", rules);
   if (trucks.length >= truckCount) assignTruckPoolItems(trucks, assignedResourceStart, assignedDriverTruckRelease, assignedPush);
-  if (helperNeeded && helpers.length >= truckCount) assignCrewPoolItems(helpers, assignedResourceStart, assignedReturn, assignedPush, "helperId", rules);
+  if (helperNeeded && helpers.length >= truckCount) assignCrewPoolItems(helpers, assignedResourceStart, assignedDriverTruckRelease, assignedPush, "helperId", rules);
   else if (!helperNeeded) { assignedPush.helperId = null; }
   return assignedPush;
 }
@@ -1048,9 +1047,7 @@ function truckPriorityForPush(truck: ResourcePoolItem, push: Push) {
   return 5;
 }
 
-function helpersRequiredForPush(push: Push, trucks: ResourcePoolItem[], rules: PlanningRules) {
-  if (push.flights.every(isInternationalStripFlight)) return false;
-  if (trucks.length > 0 && trucks.every(isSovTruck)) return false;
+function helpersRequiredForPush(push: Push, rules: PlanningRules) {
   if (push.flights.every((flight) => flight.operationType === "express")) return false;
   return rules.helperRequiredForMainline;
 }

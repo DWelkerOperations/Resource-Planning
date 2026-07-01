@@ -154,6 +154,29 @@ describe("scheduler", () => {
     assert.ok(result.pushes.every((push) => !push.riskFlags.includes("Shift exceeds standard shift span")));
   });
 
+  it("requires one helper shift for each mainline driver shift", () => {
+    const result = createPlanningSchedule(
+      [
+        flight({ id: "f1", flightNumber: "UA100", aircraft: "737", etd: "08:00", gate: "A1", originAirport: "ORD" }),
+        flight({ id: "f2", flightNumber: "UA101", aircraft: "737", etd: "13:00", gate: "A2", originAirport: "ORD" }),
+      ],
+      [
+        { id: "d1", name: "Driver 1", truck: "T1", radio: "R1", shiftStart: "04:00", shiftEnd: "12:30" },
+        { id: "d2", name: "Driver 2", truck: "T2", radio: "R2", shiftStart: "07:00", shiftEnd: "15:30" },
+      ],
+      [
+        { id: "h1", name: "Helper 1", shiftStart: "04:00", shiftEnd: "12:30" },
+        { id: "h2", name: "Helper 2", shiftStart: "07:00", shiftEnd: "15:30" },
+      ],
+      baseTrucks,
+      { rules: planningRules, operationType: "mainline", allowShiftOverflow: false },
+    );
+
+    assert.equal(result.summary.unscheduledFlights, 0);
+    assert.equal(result.summary.helpersRequired, result.summary.driversRequired);
+    assert.ok(result.pushes.every((push) => push.helperId && push.helperId !== "needed"));
+  });
+
   it("marks unknown aircraft as critical timing risk", () => {
     const result = createPlanningSchedule(
       [flight({ aircraft: "Unknown", etd: "10:00" })],
