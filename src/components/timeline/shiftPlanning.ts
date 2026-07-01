@@ -15,10 +15,10 @@ export type PlannedShift = {
 };
 
 export function plannedShiftForDriver(driver: Driver, pushes: Push[]): PlannedShift {
-  const startMinutes = timeToMinutes(driver.shiftStart);
-  const endMinutes = timeToMinutes(driver.shiftEnd);
   const displayStart = driver.displayShiftStart ?? driver.shiftStart;
   const displayEnd = driver.displayShiftEnd ?? driver.shiftEnd;
+  const startMinutes = timeToMinutes(displayStart);
+  const endMinutes = timeToMinutes(displayEnd);
 
   if (pushes.length === 0) {
     return {
