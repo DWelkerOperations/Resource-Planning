@@ -1,4 +1,5 @@
 import { normalizeAirportCode, sampleAirportOptions } from "../../data/airports";
+import { appBranding } from "../../config/appBranding";
 import type { ReferenceSchedule } from "../../data/referenceSchedules";
 import { ScheduleImporter } from "../import/ScheduleImporter";
 import type { AirportCode, FlightAssignment } from "../../types/dispatch";
@@ -37,7 +38,7 @@ export function TopBar({
       <div className="mb-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-semibold tracking-tight text-ink">Resource Planner</h1>
+            <h1 className="text-xl font-semibold tracking-tight text-ink">{appBranding.productName}</h1>
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
             <span className="text-sm font-medium text-slate-500">{activeAirport}</span>
           </div>

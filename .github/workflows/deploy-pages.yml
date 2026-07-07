@@ -111,18 +111,22 @@ jobs:
         run: pnpm build
         env:
           GITHUB_PAGES: "true"
+          APP_VARIANT: "resource-planning"
 
       - name: Build beta
         working-directory: beta
         run: pnpm build
         env:
           GITHUB_PAGES: "true"
-          APP_BASE_PATH: "/Dispatch-Tool/v1.1Beta/"
+          APP_BASE_PATH: "/Dispatch-Tool/dispatch-tool-beta/"
+          APP_VARIANT: "dispatch-tool-beta"
 
       - name: Assemble Pages artifact
         run: |
           mkdir -p public-site
           cp -R stable/dist/. public-site/
+          mkdir -p public-site/dispatch-tool-beta
+          cp -R beta/dist/. public-site/dispatch-tool-beta/
           mkdir -p public-site/v1.1Beta
           cp -R beta/dist/. public-site/v1.1Beta/
 

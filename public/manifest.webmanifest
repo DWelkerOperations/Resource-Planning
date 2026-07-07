@@ -1,7 +1,7 @@
 {
-  "name": "Sky Chefs Dispatch",
-  "short_name": "SkyChefs",
-  "description": "Sky Chefs operations dispatch tools.",
+  "name": "Resource Planning",
+  "short_name": "Resources",
+  "description": "Transportation resource planning prototype.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#091c36",

@@ -1,4 +1,5 @@
 import type { ReferenceSchedule } from "../../data/referenceSchedules";
+import { appBranding } from "../../config/appBranding";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import type { AirportCode, AppTab, FlightAssignment } from "../../types/dispatch";
@@ -53,7 +54,7 @@ export function AppShell({
           />
           <div className="min-h-0 flex-1 overflow-auto p-5">{children}</div>
           <footer className="border-t border-slate-200 bg-white/80 px-5 py-3 text-xs text-slate-500">
-            V{__APP_VERSION__} Resource Planning | Commit {__BUILD_COMMIT__} | Built{" "}
+            V{__APP_VERSION__} {appBranding.footerName} | Commit {__BUILD_COMMIT__} | Built{" "}
             {new Intl.DateTimeFormat("en", {
               dateStyle: "medium",
               timeStyle: "short",

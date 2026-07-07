@@ -24,6 +24,7 @@ export default defineConfig({
   plugins: [react()],
   cacheDir: "/private/tmp/dispatch-tool-vite-cache",
   define: {
+    __APP_VARIANT__: JSON.stringify(process.env.APP_VARIANT ?? "resource-planning"),
     __APP_VERSION__: JSON.stringify(readVersion()),
     __BUILD_COMMIT__: JSON.stringify(readCommitHash()),
     __BUILD_TIMESTAMP__: JSON.stringify(new Date().toISOString()),

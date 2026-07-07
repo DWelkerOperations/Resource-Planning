@@ -1,8 +1,17 @@
-import { ClipboardCheck, Menu, Ruler, Settings } from "lucide-react";
+import { BarChart3, CalendarDays, ClipboardCheck, LayoutDashboard, Menu, Plane, Ruler, Settings, Truck, Users, Wrench } from "lucide-react";
+import { isVisibleAppTab } from "../../config/appBranding";
 import type { AppTab } from "../../types/dispatch";
 
 const navItems = [
   { id: "resource-guide", label: "Resource", icon: ClipboardCheck },
+  { id: "planning", label: "Plan", icon: CalendarDays },
+  { id: "ord-planner", label: "ORD", icon: Plane },
+  { id: "dispatch", label: "Dispatch", icon: Truck },
+  { id: "staffing", label: "Staffing", icon: Users },
+  { id: "fleet", label: "Fleet", icon: Wrench },
+  { id: "exceptions", label: "Issues", icon: BarChart3 },
+  { id: "tour-sheet", label: "Tours", icon: ClipboardCheck },
+  { id: "dashboard", label: "Dash", icon: LayoutDashboard },
   { id: "thumb-rules", label: "Rules", icon: Ruler },
 ] as const;
 
@@ -18,7 +27,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         <Menu size={21} />
       </button>
       <nav className="flex flex-1 flex-col items-center gap-3">
-        {navItems.map((item) => {
+        {navItems.filter((item) => isVisibleAppTab(item.id)).map((item) => {
           const Icon = item.icon;
           const active = activeTab === item.id;
           return (

@@ -1,6 +1,6 @@
-# Dispatch Tool
+# Resource Planning
 
-Modern frontend prototype for airline catering dispatch and transportation resource planning.
+Modern frontend prototype for airline catering transportation resource planning.
 
 ## V1.1 Resource Planning
 
@@ -56,7 +56,13 @@ Expected public URL after Pages is enabled:
 https://dwelkeroperations.github.io/Dispatch-Tool/
 ```
 
-Expected beta URL when the `v1.1Beta` branch exists:
+Expected Dispatch Tool Beta URL when the `v1.1Beta` branch exists:
+
+```text
+https://dwelkeroperations.github.io/Dispatch-Tool/dispatch-tool-beta/
+```
+
+Legacy beta URL:
 
 ```text
 https://dwelkeroperations.github.io/Dispatch-Tool/v1.1Beta/
@@ -77,7 +83,7 @@ Deployment behavior:
 - Viewers do not need a GitHub account or GitHub login.
 - The stable shared page updates only after code is committed and pushed to `main`.
 - The beta page updates after code is committed and pushed to `v1.1Beta`.
-- The GitHub Actions workflow installs dependencies, runs typecheck/lint/audit/tests, builds stable with the `/Dispatch-Tool/` base path, builds beta with the `/Dispatch-Tool/v1.1Beta/` base path when the beta branch exists, and publishes both into one Pages artifact.
+- The GitHub Actions workflow installs dependencies, runs typecheck/lint/audit/tests, builds stable Resource Planning with the `/Dispatch-Tool/` base path, builds Dispatch Tool Beta with the `/Dispatch-Tool/dispatch-tool-beta/` base path when the beta branch exists, and publishes both into one Pages artifact. The legacy `/Dispatch-Tool/v1.1Beta/` URL is also retained as a beta alias.
 - Use `workflow_dispatch` from GitHub Actions if a manual redeploy of the current `main` commit is needed.
 
 One-time GitHub repository setup:

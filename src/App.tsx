@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "./components/layout/AppShell";
 import { DashboardPage } from "./components/tabs/DashboardPage";
 import { DispatchToolPage } from "./components/tabs/DispatchToolPage";
@@ -12,6 +12,7 @@ import { ordJuneTripmasterDefaultAirport, ordJuneTripmasterDefaultDate, ordJuneT
 import { planningRules as defaultPlanningRules } from "./data/planningRules";
 import { ordJuneTripmasterReferenceId, referenceSchedules, type ReferenceSchedule } from "./data/referenceSchedules";
 import { exportResourceGuideWorkbook } from "./export/resourceGuideExport";
+import { appBranding, isVisibleAppTab } from "./config/appBranding";
 import type { AirportCode, AppTab, FlightAssignment, OperationView, PlanningRules, ScheduleResult } from "./types/dispatch";
 import type { FlightTaskTypeChange } from "./utils/taskTypeUpdates";
 
@@ -82,6 +83,10 @@ export default function App() {
     ...planners[activePlannerTab],
     visibleFlights: visibleFlightsByTab[activePlannerTab],
   };
+
+  useEffect(() => {
+    document.title = appBranding.productName;
+  }, []);
 
   function updatePlanner(tabId: PlannerTabId, partial: Partial<PlannerState>) {
     setPlanners((current) => ({
@@ -161,6 +166,10 @@ export default function App() {
     updatePlanner(tabId, { operationType });
   }
 
+  function handleTabChange(tab: AppTab) {
+    if (isVisibleAppTab(tab)) setActiveTab(tab);
+  }
+
   function handlePlanningFlightTaskTypeChange(change: FlightTaskTypeChange) {
     setPlanners((current) => ({
       ...current,
@@ -195,7 +204,7 @@ export default function App() {
       onReferenceScheduleLoad={handleReferenceScheduleLoad}
       onScheduleClear={handleScheduleClear}
       onScheduleImport={handleScheduleImport}
-      onTabChange={setActiveTab}
+      onTabChange={handleTabChange}
     >
       {activeTab === "planning" && (
         <PlanningToolPage
