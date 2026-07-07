@@ -6,12 +6,14 @@ import type { AirportCode, FlightAssignment } from "../../types/dispatch";
 
 type TopBarProps = {
   activeAirport: AirportCode;
+  hasCustomSchedule: boolean;
   importedFileName?: string;
   importedFlightCount?: number;
   referenceSchedules: ReferenceSchedule[];
   selectedReferenceScheduleId: string;
   visibleFlightCount: number;
   onAirportChange: (airport: AirportCode) => void;
+  onCustomScheduleLoad: () => void;
   onReferenceScheduleLoad: (schedule: ReferenceSchedule) => void;
   onScheduleClear: () => void;
   onScheduleImport: (flights: FlightAssignment[], fileName: string, selectedDate?: string) => void;
@@ -19,12 +21,14 @@ type TopBarProps = {
 
 export function TopBar({
   activeAirport,
+  hasCustomSchedule,
   importedFileName,
   importedFlightCount,
   referenceSchedules,
   selectedReferenceScheduleId,
   visibleFlightCount,
   onAirportChange,
+  onCustomScheduleLoad,
   onReferenceScheduleLoad,
   onScheduleClear,
   onScheduleImport,
@@ -65,12 +69,17 @@ export function TopBar({
           <select
             value={selectedReferenceScheduleId}
             onChange={(event) => {
+              if (event.target.value === "") {
+                onCustomScheduleLoad();
+                return;
+              }
+
               const schedule = referenceSchedules.find((item) => item.id === event.target.value);
               if (schedule) onReferenceScheduleLoad(schedule);
             }}
             className="bg-transparent text-sm font-semibold text-ink outline-none"
           >
-            <option value="">Imported / custom</option>
+            <option value="" disabled={!hasCustomSchedule && selectedReferenceScheduleId !== ""}>Imported / custom</option>
             {referenceSchedules.map((schedule) => <option key={schedule.id} value={schedule.id}>{schedule.label}</option>)}
           </select>
         </label>

@@ -10,7 +10,7 @@ import { ThumbRulesPage } from "./components/tabs/ThumbRulesPage";
 import { TourSheetPage } from "./components/tabs/TourSheetPage";
 import { ordJuneTripmasterDefaultAirport, ordJuneTripmasterDefaultDate, ordJuneTripmasterFileName, ordJuneTripmasterFlights } from "./data/ordJuneTripmasterFlights";
 import { planningRules as defaultPlanningRules } from "./data/planningRules";
-import { ordJuneTripmasterReferenceId, referenceSchedules, type ReferenceSchedule } from "./data/referenceSchedules";
+import { referenceSchedules, type ReferenceSchedule } from "./data/referenceSchedules";
 import { exportResourceGuideWorkbook } from "./export/resourceGuideExport";
 import { appBranding, isVisibleAppTab } from "./config/appBranding";
 import type { AirportCode, AppTab, FlightAssignment, OperationView, PlanningRules, ScheduleResult } from "./types/dispatch";
@@ -25,18 +25,22 @@ type PlannerState = {
   flights: FlightAssignment[];
   fileName: string;
   referenceScheduleId: string;
+  customSchedule: PlannerScheduleSnapshot | null;
   operationType: OperationView;
   result: ScheduleResult | null;
   maxStartTimes?: number;
   startTimeMode?: OrdPlannerStartTimeMode;
 };
 
+type PlannerScheduleSnapshot = Pick<PlannerState, "airport" | "date" | "flights" | "fileName">;
+
 const initialPlannerState: PlannerState = {
   airport: ordJuneTripmasterDefaultAirport,
   date: ordJuneTripmasterDefaultDate,
   flights: ordJuneTripmasterFlights,
   fileName: ordJuneTripmasterFileName,
-  referenceScheduleId: ordJuneTripmasterReferenceId,
+  referenceScheduleId: "",
+  customSchedule: null,
   operationType: "mainline",
   result: null,
 };
@@ -102,13 +106,21 @@ export default function App() {
     const firstImportedDate = selectedDate || flights.find((flight) => flight.departureDate)?.departureDate;
     const firstImportedAirport = flights.find((flight) => (!firstImportedDate || flight.departureDate === firstImportedDate) && flight.originAirport)?.originAirport
       ?? flights.find((flight) => flight.originAirport)?.originAirport;
-    updatePlanner(activePlannerTab, {
+    const currentPlanner = planners[activePlannerTab];
+    const nextAirport = activePlannerTab === "ord-planner" ? "ORD" as AirportCode : firstImportedAirport ?? currentPlanner.airport;
+    const nextDate = firstImportedDate ?? currentPlanner.date;
+    const customSchedule = {
+      airport: nextAirport,
+      date: nextDate,
       flights,
       fileName,
-      referenceScheduleId: ordJuneTripmasterReferenceId,
+    };
+
+    updatePlanner(activePlannerTab, {
+      ...customSchedule,
+      customSchedule,
+      referenceScheduleId: "",
       result: null,
-      ...(activePlannerTab === "ord-planner" ? { airport: "ORD" as AirportCode } : firstImportedAirport ? { airport: firstImportedAirport } : {}),
-      ...(firstImportedDate ? { date: firstImportedDate } : {}),
     });
   }
 
@@ -117,6 +129,7 @@ export default function App() {
       flights: ordJuneTripmasterFlights,
       fileName: ordJuneTripmasterFileName,
       referenceScheduleId: "",
+      customSchedule: null,
       airport: ordJuneTripmasterDefaultAirport,
       date: ordJuneTripmasterDefaultDate,
       result: null,
@@ -134,6 +147,16 @@ export default function App() {
       referenceScheduleId: schedule.id,
       airport: schedule.airport,
       date: schedule.date,
+      result: null,
+    });
+  }
+
+  function handleCustomScheduleLoad() {
+    const customSchedule = planners[activePlannerTab].customSchedule;
+    if (!customSchedule) return;
+    updatePlanner(activePlannerTab, {
+      ...customSchedule,
+      referenceScheduleId: "",
       result: null,
     });
   }
@@ -197,10 +220,12 @@ export default function App() {
       activeAirport={activeSchedule.airport}
       importedFileName={activeSchedule.fileName}
       importedFlightCount={activeSchedule.flights.length}
+      hasCustomSchedule={Boolean(activeSchedule.customSchedule)}
       referenceSchedules={referenceSchedules}
       selectedReferenceScheduleId={activeSchedule.referenceScheduleId}
       visibleFlightCount={activeSchedule.visibleFlights.length}
       onAirportChange={handleAirportChange}
+      onCustomScheduleLoad={handleCustomScheduleLoad}
       onReferenceScheduleLoad={handleReferenceScheduleLoad}
       onScheduleClear={handleScheduleClear}
       onScheduleImport={handleScheduleImport}

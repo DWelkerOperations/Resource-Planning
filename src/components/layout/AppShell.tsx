@@ -8,12 +8,14 @@ type AppShellProps = {
   activeTab: AppTab;
   activeAirport: AirportCode;
   onTabChange: (tab: AppTab) => void;
+  hasCustomSchedule: boolean;
   importedFileName?: string;
   importedFlightCount?: number;
   referenceSchedules: ReferenceSchedule[];
   selectedReferenceScheduleId: string;
   visibleFlightCount: number;
   onAirportChange: (airport: AirportCode) => void;
+  onCustomScheduleLoad: () => void;
   onReferenceScheduleLoad: (schedule: ReferenceSchedule) => void;
   onScheduleClear: () => void;
   onScheduleImport: (flights: FlightAssignment[], fileName: string, selectedDate?: string) => void;
@@ -24,12 +26,14 @@ export function AppShell({
   activeTab,
   activeAirport,
   onTabChange,
+  hasCustomSchedule,
   importedFileName,
   importedFlightCount,
   referenceSchedules,
   selectedReferenceScheduleId,
   visibleFlightCount,
   onAirportChange,
+  onCustomScheduleLoad,
   onReferenceScheduleLoad,
   onScheduleClear,
   onScheduleImport,
@@ -42,12 +46,14 @@ export function AppShell({
         <main className="flex min-w-0 flex-1 flex-col bg-slate-50/70">
           <TopBar
             activeAirport={activeAirport}
+            hasCustomSchedule={hasCustomSchedule}
             importedFileName={importedFileName}
             importedFlightCount={importedFlightCount}
             referenceSchedules={referenceSchedules}
             selectedReferenceScheduleId={selectedReferenceScheduleId}
             visibleFlightCount={visibleFlightCount}
             onAirportChange={onAirportChange}
+            onCustomScheduleLoad={onCustomScheduleLoad}
             onReferenceScheduleLoad={onReferenceScheduleLoad}
             onScheduleClear={onScheduleClear}
             onScheduleImport={onScheduleImport}

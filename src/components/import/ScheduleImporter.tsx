@@ -2,7 +2,7 @@ import { Upload } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useMemo, useRef, useState } from "react";
 import type { FlightAssignment } from "../../types/dispatch";
-import type { NormalizedScheduleRow, ScheduleImportResult } from "../../import/scheduleImport";
+import { parseScheduleFile, type NormalizedScheduleRow, type ScheduleImportResult } from "../../import/scheduleImport";
 
 type ScheduleImporterProps = {
   onImport: (flights: FlightAssignment[], fileName: string, selectedDate?: string) => void;
@@ -45,7 +45,6 @@ export function ScheduleImporter({ onImport }: ScheduleImporterProps) {
       setImportWarning(null);
       setPendingSchedule(null);
       setSelectedDate("");
-      const { parseScheduleFile } = await import("../../import/scheduleImport");
       const result = await parseScheduleFile(file);
       setPendingSchedule({ ...result, fileName: file.name });
       setSelectedDate(result.availableDates[0] ?? "");
