@@ -9,6 +9,7 @@ import { categoryForAircraft } from "../../import/aircraftMap";
 import type { Driver, FlightAssignment, Helper, ManualPlanState, OperationView, PlanningRules, Push, ScheduleResult } from "../../types/dispatch";
 import { applyFlightTaskTypeChange, type FlightTaskTypeChange } from "../../utils/taskTypeUpdates";
 import { resourceIds } from "../../utils/resources";
+import { earliestPlanningShiftStartMinutes } from "../../utils/shiftStarts";
 import { DispatcherTimeline } from "../timeline/DispatcherTimeline";
 import { OperationToggle } from "../ui/OperationToggle";
 import { Panel } from "../ui/Panel";
@@ -1064,9 +1065,8 @@ function candidateShiftStartsForFlights(flights: FlightAssignment[], rules: Plan
     .filter((minutes) => Number.isFinite(minutes));
   if (departureTimes.length === 0) return ["00:00"];
 
-  const firstDeparture = Math.min(...departureTimes);
   const lastDeparture = Math.max(...departureTimes);
-  const earliestCandidate = Math.max(0, snapToIncrement(firstDeparture - rules.maxKitchenDepartureBeforeDepartureMinutes - 15, shiftStartIncrementMinutes, "down"));
+  const earliestCandidate = earliestPlanningShiftStartMinutes(flights, rules, shiftStartIncrementMinutes);
   const latestCandidate = snapToIncrement(lastDeparture, shiftStartIncrementMinutes, "up");
   const starts: string[] = [];
 
